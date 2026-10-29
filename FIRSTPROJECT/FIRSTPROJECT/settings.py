@@ -76,6 +76,8 @@ TEMPLATES = [
 WSGI_APPLICATION = "FIRSTPROJECT.wsgi.application"
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
+USE_SQLITE_FALLBACK = os.environ.get("USE_SQLITE_FALLBACK", "false").strip().lower() in {"1", "true", "yes"}
+
 if DATABASE_URL:
     database_url = urlsplit(DATABASE_URL)
     if database_url.scheme not in {"postgres", "postgresql"} or not database_url.hostname:
@@ -92,7 +94,7 @@ if DATABASE_URL:
             "OPTIONS": {"sslmode": "require"} if not DEBUG else {},
         }
     }
-elif DEBUG:
+elif DEBUG or USE_SQLITE_FALLBACK:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
@@ -100,7 +102,7 @@ elif DEBUG:
         }
     }
 else:
-    raise ImproperlyConfigured("DATABASE_URL is required when DEBUG is false.")
+    raise ImproperlyConfigured("DATABASE_URL is required when DEBUG is false and SQLITE fallback is disabled.")
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
