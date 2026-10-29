@@ -72,6 +72,12 @@ class ResourceOffer(models.Model):
 
 
 class BookingRequest(models.Model):
+    STATUS_CHOICES = [
+        ('pending_review', 'Pending review'),
+        ('approved', 'Approved'),
+        ('declined', 'Declined'),
+        ('completed', 'Completed'),
+    ]
     home = models.ForeignKey(ChildrenHome, on_delete=models.CASCADE, related_name='booking_requests')
     date = models.DateField()
     time = models.CharField(max_length=40)
@@ -80,6 +86,8 @@ class BookingRequest(models.Model):
     email = models.EmailField()
     purpose = models.TextField()
     notes = models.TextField(blank=True, default='')
+    visitor_conduct_accepted = models.BooleanField(default=False)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_review')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -88,6 +96,12 @@ class BookingRequest(models.Model):
 
 
 class FoodBridgeListing(models.Model):
+    STATUS_CHOICES = [
+        ('pending_review', 'Pending review'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('completed', 'Completed'),
+    ]
     CATEGORY_CHOICES = [
         ('fresh_produce', 'Fresh produce'),
         ('dry_goods', 'Dry goods'),
@@ -97,6 +111,8 @@ class FoodBridgeListing(models.Model):
     ]
     food_name = models.CharField(max_length=200)
     category = models.CharField(max_length=30, choices=CATEGORY_CHOICES)
+    contact_name = models.CharField(max_length=150, blank=True)
+    contact_email = models.EmailField(blank=True)
     quantity = models.PositiveIntegerField()
     unit = models.CharField(max_length=30)
     location = models.CharField(max_length=200)
@@ -104,6 +120,7 @@ class FoodBridgeListing(models.Model):
     expiry_date = models.DateField()
     handling = models.TextField(blank=True, default='')
     food_safety_confirmed = models.BooleanField(default=False)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_review')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -112,18 +129,28 @@ class FoodBridgeListing(models.Model):
 
 
 class HomeNeed(models.Model):
+    CATEGORY_CHOICES = [
+        ('food', 'Food'),
+        ('clothing', 'Clothing'),
+        ('school_supplies', 'School supplies'),
+        ('hygiene', 'Hygiene'),
+        ('bedding', 'Bedding'),
+        ('other', 'Other essential goods'),
+    ]
     VERIFICATION_CHOICES = [
         ('verified', 'Verified'),
         ('approved', 'Approved'),
         ('pending', 'Pending'),
     ]
     home = models.ForeignKey(ChildrenHome, on_delete=models.CASCADE, related_name='needs')
+    category = models.CharField(max_length=30, choices=CATEGORY_CHOICES, default='other')
     resource_type = models.CharField(max_length=120)
     quantity_requested = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     quantity_fulfilled = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     urgency = models.PositiveIntegerField(default=1)
     deadline = models.DateField(blank=True, null=True)
     verification_status = models.CharField(max_length=20, choices=VERIFICATION_CHOICES, default='pending')
+    is_published = models.BooleanField(default=False)
     delivery_feasible = models.BooleanField(default=True)
     storage_capacity_available = models.BooleanField(default=True)
     unit = models.CharField(max_length=20, default='kg')
@@ -180,3 +207,62 @@ class Hobby(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class HomeRegistration(models.Model):
+    STATUS_CHOICES = [
+        ('pending_review', 'Pending review'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+    name = models.CharField(max_length=100)
+    location = models.CharField(max_length=100, choices=ChildrenHome.COUNTY_CHOICES)
+    email = models.EmailField()
+    phone_number = models.CharField(max_length=20, blank=True)
+    website_url = models.URLField(blank=True)
+    description = models.TextField()
+    verification_acknowledged = models.BooleanField(default=False)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_review')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.name} ({self.get_status_display()})'
+
+
+class ContributionPledge(models.Model):
+    RESOURCE_CHOICES = [
+        ('money', 'Money'),
+        ('food', 'Food'),
+        ('supplies', 'Essential supplies'),
+    ]
+    DIRECTION_CHOICES = [
+        ('need', 'Specific need'),
+        ('fairmatch', 'FairMatch recommendation'),
+    ]
+    STATUS_CHOICES = [
+        ('pending_review', 'Pending review'),
+        ('accepted', 'Accepted'),
+        ('fulfilled', 'Fulfilled'),
+        ('withdrawn', 'Withdrawn'),
+    ]
+    resource_type = models.CharField(max_length=20, choices=RESOURCE_CHOICES)
+    direction = models.CharField(max_length=20, choices=DIRECTION_CHOICES)
+    need = models.ForeignKey(
+        HomeNeed,
+        on_delete=models.SET_NULL,
+        related_name='pledges',
+        blank=True,
+        null=True,
+    )
+    description = models.CharField(max_length=300)
+    quantity = models.CharField(max_length=100)
+    donor_name = models.CharField(max_length=150)
+    email = models.EmailField()
+    pledge_acknowledged = models.BooleanField(default=False)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_review')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.get_resource_type_display()} pledge from {self.donor_name}'

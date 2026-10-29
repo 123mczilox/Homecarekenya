@@ -22,6 +22,15 @@
             const csrfInput = form.querySelector('input[name="csrfmiddlewaretoken"]');
             const payload = Object.fromEntries(new FormData(form).entries());
             delete payload.csrfmiddlewaretoken;
+            form.querySelectorAll('input[type="checkbox"][name]').forEach((input) => {
+                payload[input.name] = input.checked;
+            });
+            form.querySelectorAll('input[type="number"][name]').forEach((input) => {
+                if (input.value !== "") payload[input.name] = Number(input.value);
+            });
+            form.querySelectorAll('select[name="storage_capacity_available"]').forEach((select) => {
+                payload[select.name] = select.value === "true";
+            });
 
             if (submitButton) submitButton.disabled = true;
             if (feedback) {

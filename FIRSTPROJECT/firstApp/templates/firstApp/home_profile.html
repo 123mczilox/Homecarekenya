@@ -24,12 +24,26 @@
                     this public profile.</p>
             </div>
             <div class="profile-section-title">
-                <h2>Current needs</h2><span class="demo-tag">Live needs are not yet available</span>
+                <h2>Current needs</h2>
             </div>
+            {% for need in needs %}
             <div class="profile-empty"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i>
-                <p>This prototype does not yet store organization needs. Contact the organization to confirm what
-                    support is currently useful.</p>
+                <div>
+                    <b>{{ need.resource_type }}</b>
+                    <p>{{ need.outstanding_quantity }} {{ need.unit }} remaining · {{ need.get_category_display }} ·
+                        Urgency {{ need.urgency }}/5</p>
+                </div>
             </div>
+            {% empty %}
+            <div class="profile-empty"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i>
+                {% if needs is None %}
+                <p>Contact the organization to confirm which current needs have been verified and published.</p>
+                {% else %}
+                <p>No verified outstanding needs are currently listed. Contact the organization to confirm what
+                    support is useful.</p>
+                {% endif %}
+            </div>
+            {% endfor %}
         </section>
         <aside class="profile-aside">
             <h3>Connect thoughtfully</h3>

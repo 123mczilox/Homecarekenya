@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def initialize_at():
-    username = os.getenv('AT_USERNAME', 'sandbox')
+    username = os.getenv('AT_USERNAME')
     api_key = os.getenv('AT_API_KEY', '')
 
     if not api_key or api_key == 'your_africastalking_api_key_here':

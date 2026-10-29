@@ -20,7 +20,21 @@
 
 <body>
     {% include 'navbar.html' %}
-    <main>{% block content %}{% endblock %}</main>
+    <main>
+        {% if messages %}
+        <div class="section-shell page-messages" aria-live="polite">
+            {% for message in messages %}
+            <div class="notice {% if message.tags == 'success' %}notice-success{% else %}notice-warning{% endif %}"
+                role="status">
+                <i class="fa-solid {% if message.tags == 'success' %}fa-circle-check{% else %}fa-circle-info{% endif %}"
+                    aria-hidden="true"></i>
+                <span>{{ message }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
     <script defer src="{% static 'js/homecare-api.js' %}"></script>
 </body>
 

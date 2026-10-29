@@ -6,34 +6,33 @@
         <div>
             <p class="eyebrow">Visit with care</p>
             <h1>Request a home visit.</h1>
-            <p>Visits happen only at times approved by the organization. This preview does not show real availability or
-                confirm a booking.</p>
-        </div><span class="demo-tag"><i class="fa-solid fa-flask" aria-hidden="true"></i> Demo availability</span>
+            <p>Send your preferred date and time to the organization. A visit is confirmed only after the organization
+                approves it.</p>
+        </div>
     </div>
-    {% if submitted %}<div class="notice notice-success"><i class="fa-solid fa-circle-check" aria-hidden="true"></i>
-        <div><b>Request preview created</b><span>No booking was sent or reserved. Contact the organization to arrange an
-                approved visit.</span></div>
-    </div>{% endif %}
+    {% if not homes %}<div class="notice notice-warning"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+        <span>No verified organizations are currently available to receive visit requests.</span></div>{% endif %}
     <div class="booking-layout">
-        <form class="panel workflow-form" method="post" data-api-endpoint="/api/v1/visit-requests/" action="">{% csrf_token %}<div
+        <form class="panel workflow-form" method="post" data-api-endpoint="/api/v1/visit-requests/" action="">{% csrf_token %}{{ form.errors }}<div
                 class="form-row"><label>Organization<select name="home" required>
-                        <option value="">Choose a home</option>{% for home in homes %}<option value="{{ home.pk }}">{{
+                        <option value="">Choose a home</option>{% for home in homes %}<option value="{{ home.pk }}" {% if form.home.value|stringformat:"s" == home.pk|stringformat:"s" %}selected{% endif %}>{{
                             home.name }} · {{ home.location }}</option>{% endfor %}
-                    </select></label><label>Proposed date<input name="date" type="date" required></label></div>
-            <label>Sample time window<select name="time" required>
+                    </select></label><label>Proposed date<input name="date" type="date" required
+                        value="{{ form.date.value|default_if_none:'' }}"></label></div>
+            <label>Preferred time window<select name="time" required>
                     <option value="">Choose a time</option>
-                    <option value="morning">Morning · sample only</option>
-                    <option value="afternoon">Afternoon · sample only</option>
+                    <option value="morning" {% if form.time.value == "morning" %}selected{% endif %}>Morning</option>
+                    <option value="afternoon" {% if form.time.value == "afternoon" %}selected{% endif %}>Afternoon</option>
                 </select></label>
             <div class="form-row"><label>Number of visitors<input type="number" name="visitor_count" min="1" max="10"
-                        required value="1"></label><label>Your name<input name="visitor_name" autocomplete="name"
-                        required></label></div><label>Email<input type="email" name="email" autocomplete="email"
-                    required></label><label>Purpose of visit<textarea name="purpose" rows="3" required
-                    placeholder="Tell the organization what you hope to do"></textarea></label><label>Accessibility or
-                scheduling notes<textarea name="notes" rows="2"></textarea></label><label class="checkbox-label"><input
-                    type="checkbox" required><span>I agree to follow the organization's visitor guidance and
-                    safeguarding requirements.</span></label><input type="hidden" name="visitor_conduct_accepted"
-                value="true"><button class="button" type="submit">Preview visit request
+                        required value="{{ form.visitor_count.value|default:'1' }}"></label><label>Your name<input name="visitor_name" autocomplete="name"
+                        required value="{{ form.visitor_name.value|default_if_none:'' }}"></label></div><label>Email<input type="email" name="email" autocomplete="email"
+                    required value="{{ form.email.value|default_if_none:'' }}"></label><label>Purpose of visit<textarea name="purpose" rows="3" required
+                    placeholder="Tell the organization what you hope to do">{{ form.purpose.value|default_if_none:'' }}</textarea></label><label>Accessibility or
+                scheduling notes<textarea name="notes" rows="2">{{ form.notes.value|default_if_none:'' }}</textarea></label><label class="checkbox-label"><input
+                    type="checkbox" name="visitor_conduct_accepted" value="true" {% if form.visitor_conduct_accepted.value %}checked{% endif %}
+                    required><span>I agree to follow the organization's visitor guidance and
+                    safeguarding requirements.</span></label><button class="button" type="submit">Submit visit request
                 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
             <p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p>
         </form>
@@ -42,8 +41,7 @@
             <h2>Safeguarding comes first.</h2>
             <p>Never arrive without approval. Follow visitor conduct guidance, respect privacy, and do not photograph
                 children without explicit authorization.</p>
-            <div class="booking-state"><span class="status-pill status-review">Pending approval</span><small>Demo state
-                    only · no reference generated</small></div><a class="text-link" href="{% url 'find_homes' %}">Browse
+            <div class="booking-state"><span class="status-pill status-review">Pending approval</span><small>The organization will contact you to confirm</small></div><a class="text-link" href="{% url 'find_homes' %}">Browse
                 organizations <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
         </aside>
     </div>

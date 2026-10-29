@@ -6,48 +6,104 @@
         <div>
             <p class="eyebrow">Give with intention</p>
             <h1>Your contribution, clearly tracked.</h1>
-            <p>Choose a specific verified home, support an outstanding need, or allow FairMatch to recommend where
-                suitable resources may help most.</p>
-        </div><span class="demo-tag"><i class="fa-solid fa-flask" aria-hidden="true"></i> Demo only</span>
+            <p>Offer a resource for a specific need or request a FairMatch recommendation. Every pledge is reviewed
+                before it is accepted or fulfilled.</p>
+        </div>
     </div>
-    {% if submitted %}<div class="notice notice-success"><i class="fa-solid fa-circle-check" aria-hidden="true"></i>
-        <div><b>Contribution preview complete</b><span>Nothing was submitted, saved or charged. This prototype does not
-                process donations or payments.</span></div>
-    </div>{% endif %}
-    <form class="panel workflow-form donation-form" method="post" data-api-endpoint="/api/v1/contributions/">{%
-        csrf_token %}<fieldset>
+    <form class="panel workflow-form donation-form" method="post" data-api-endpoint="/api/v1/contributions/">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <fieldset>
             <legend>What would you like to contribute?</legend>
-            <div class="choice-grid"><label class="choice-card"><input type="radio" name="resource_type" value="money"
-                        required><span><i class="fa-solid fa-coins" aria-hidden="true"></i><b>Money</b><small>Payment
-                            flow not connected</small></span></label><label class="choice-card"><input type="radio"
-                        name="resource_type" value="food"><span><i class="fa-solid fa-carrot"
-                            aria-hidden="true"></i><b>Food</b><small>Suitable surplus only</small></span></label><label
-                    class="choice-card"><input type="radio" name="resource_type" value="supplies"><span><i
-                            class="fa-solid fa-box-open" aria-hidden="true"></i><b>Essential
-                            supplies</b><small>Clothing, books, hygiene</small></span></label></div>
+            <div class="choice-grid">
+                {% for value, label in form.resource_type.field.choices %}
+                {% if value %}
+                <label class="choice-card">
+                    <input type="radio" name="resource_type" value="{{ value }}"
+                        {% if form.resource_type.value == value %}checked{% endif %} required>
+                    <span>
+                        {% if value == "money" %}<i class="fa-solid fa-coins" aria-hidden="true"></i>
+                        {% elif value == "food" %}<i class="fa-solid fa-carrot" aria-hidden="true"></i>
+                        {% else %}<i class="fa-solid fa-box-open" aria-hidden="true"></i>{% endif %}
+                        <b>{{ label }}</b>
+                        <small>{% if value == "money" %}Pledge an amount for follow-up{% elif value == "food" %}Suitable surplus only{% else %}Clothing, books or hygiene supplies{% endif %}</small>
+                    </span>
+                </label>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {{ form.resource_type.errors }}
         </fieldset>
         <fieldset>
             <legend>How should your contribution be directed?</legend>
-            <div class="choice-grid choice-grid-two"><label class="choice-card"><input type="radio" name="direction"
-                        value="need" required><span><i class="fa-solid fa-list-check" aria-hidden="true"></i><b>Choose a
-                            specific need</b><small>Confirm the need is current with the
-                            home.</small></span></label><label class="choice-card"><input type="radio" name="direction"
-                        value="fairmatch"><span><i class="fa-solid fa-scale-balanced"
-                            aria-hidden="true"></i><b>FairMatch recommendation</b><small>Coordinator approval is still
-                            required.</small></span></label></div>
+            <div class="choice-grid choice-grid-two">
+                {% for value, label in form.direction.field.choices %}
+                {% if value %}
+                <label class="choice-card">
+                    <input type="radio" name="direction" value="{{ value }}"
+                        {% if form.direction.value == value %}checked{% endif %} required>
+                    <span>
+                        {% if value == "need" %}<i class="fa-solid fa-list-check" aria-hidden="true"></i>
+                        {% else %}<i class="fa-solid fa-scale-balanced" aria-hidden="true"></i>{% endif %}
+                        <b>{{ label }}</b>
+                        <small>{% if value == "need" %}Choose a current need with the organization.{% else %}A coordinator reviews any suggested match.{% endif %}</small>
+                    </span>
+                </label>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {{ form.direction.errors }}
         </fieldset>
-        <div class="form-row"><label>Item or amount description<input name="description"
-                    placeholder="Describe your intended contribution"></label><label>Available quantity<input
-                    name="quantity" type="text" placeholder="Amount or quantity"></label></div>
-        <div class="form-row"><label>Your name<input name="donor_name" autocomplete="name"
-                    placeholder="Name"></label><label>Email<input name="email" type="email" autocomplete="email"
-                    placeholder="Email address"></label></div><label class="checkbox-label"><input type="checkbox"
-                required><span>I understand this is a demonstration only and does not create a pledge or
-                payment.</span></label><input type="hidden" name="demo_consent" value="true"><button class="button"
-            type="submit">Preview contribution <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+        <label>Specific verified need
+            <select name="need">
+                <option value="">Choose a need (required when directing to a specific need)</option>
+                {% for need in form.need.field.queryset %}
+                <option value="{{ need.pk }}" {% if form.need.value|stringformat:"s" == need.pk|stringformat:"s" %}selected{% endif %}>
+                    {{ need.resource_type }} · {{ need.home.name }} · {{ need.outstanding_quantity }} {{ need.unit }} remaining
+                </option>
+                {% endfor %}
+            </select>
+            {{ form.need.errors }}
+            {% if not form.need.field.queryset %}
+            <small class="form-footnote">No verified outstanding needs are available. Choose FairMatch to request a
+                coordinator-reviewed recommendation.</small>
+            {% endif %}
+        </label>
+        <div class="form-row">
+            <label>Item or amount description
+                <input name="description" maxlength="300" required value="{{ form.description.value|default_if_none:'' }}"
+                    placeholder="Describe your intended contribution">
+                {{ form.description.errors }}
+            </label>
+            <label>Available quantity or amount
+                <input name="quantity" maxlength="100" required value="{{ form.quantity.value|default_if_none:'' }}"
+                    placeholder="e.g. KES 2,000 or 10 boxes">
+                {{ form.quantity.errors }}
+            </label>
+        </div>
+        <div class="form-row">
+            <label>Your name
+                <input name="donor_name" autocomplete="name" required
+                    value="{{ form.donor_name.value|default_if_none:'' }}" placeholder="Name">
+                {{ form.donor_name.errors }}
+            </label>
+            <label>Email
+                <input name="email" type="email" autocomplete="email" required
+                    value="{{ form.email.value|default_if_none:'' }}" placeholder="Email address">
+                {{ form.email.errors }}
+            </label>
+        </div>
+        <label class="checkbox-label">
+            <input type="checkbox" name="pledge_acknowledged" value="true" required>
+            <span>I understand this records a pledge for review and does not process a payment or confirm delivery.</span>
+            {{ form.pledge_acknowledged.errors }}
+        </label>
+        <button class="button" type="submit">Submit contribution pledge
+            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+        </button>
         <p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p>
-        <p class="form-footnote">No payment provider is connected. A contribution is never shown as received until
-            delivery or payment is confirmed.</p>
+        <p class="form-footnote">Pledges are not counted as received funds or fulfilled resources. A coordinator will
+            follow up before anything is accepted.</p>
     </form>
 </section>
 {% endblock %}

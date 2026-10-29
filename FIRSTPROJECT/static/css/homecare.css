@@ -59,17 +59,23 @@ select {
     font: inherit;
 }
 
+textarea {
+    font: inherit;
+}
+
 button,
 a,
 input,
-select {
+select,
+textarea {
     -webkit-tap-highlight-color: transparent;
 }
 
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
-select:focus-visible {
+select:focus-visible,
+textarea:focus-visible {
     outline: 3px solid #e5a839;
     outline-offset: 3px;
 }
@@ -196,7 +202,7 @@ b {
 .nav-links a,
 .nav-login {
     color: #48534d;
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     transition: color .18s ease;
 }
@@ -1654,12 +1660,19 @@ b {
     background: var(--canvas);
 }
 
-.directory-filters label,
-.workflow-form label {
+.directory-filters label {
     display: grid;
     gap: 6px;
     color: #46534b;
     font-size: 11px;
+    font-weight: 700;
+}
+
+.workflow-form label {
+    display: grid;
+    gap: 7px;
+    color: #46534b;
+    font-size: 0.92rem;
     font-weight: 700;
 }
 
@@ -1669,16 +1682,18 @@ b {
 .workflow-form select,
 .workflow-form textarea {
     width: 100%;
-    min-height: 42px;
-    padding: 9px 11px;
+    min-height: 48px;
+    padding: 11px 13px;
     border: 1px solid #dfe6df;
-    border-radius: 3px;
+    border-radius: 5px;
     color: var(--ink);
     background: white;
-    font-size: 12px;
+    font-size: 1rem;
+    line-height: 1.5;
 }
 
 .workflow-form textarea {
+    min-height: 112px;
     resize: vertical;
 }
 
@@ -2325,6 +2340,14 @@ b {
     line-height: 1.55;
 }
 
+.page-messages {
+    padding-top: 20px;
+}
+
+.page-messages .notice {
+    margin-bottom: 0;
+}
+
 .notice>i {
     margin-top: 2px;
 }
@@ -2351,18 +2374,19 @@ b {
 }
 
 .notice span {
-    font-size: 10px;
+    font-size: 0.9rem;
+    line-height: 1.55;
 }
 
 .workflow-form {
     display: grid;
-    gap: 14px;
+    gap: 18px;
 }
 
 .workflow-form .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: 16px;
 }
 
 .workflow-form input[type=checkbox],
@@ -2375,7 +2399,7 @@ b {
     align-items: flex-start;
     gap: 9px !important;
     color: #566159 !important;
-    font-size: 10px !important;
+    font-size: 0.9rem !important;
     font-weight: 500 !important;
     line-height: 1.55;
 }
@@ -2388,14 +2412,22 @@ b {
 .form-footnote {
     margin: -4px 0 0;
     color: var(--muted);
-    font-size: 9px;
+    font-size: 0.86rem;
     line-height: 1.6;
 }
 
 .form-feedback {
     min-height: 0;
     margin: 0;
-    font-size: 11px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.errorlist {
+    margin: 0;
+    padding-left: 1.25rem;
+    color: #8d2929;
+    font-size: 0.86rem;
     line-height: 1.5;
 }
 

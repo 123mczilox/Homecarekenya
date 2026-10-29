@@ -7,12 +7,8 @@
             <p class="eyebrow">Recover food. Support children's homes.</p>
             <h1>FoodBridge</h1>
             <p>Suitable surplus can help meet a verified need when safety, timing, storage and transport all work.</p>
-        </div><span class="demo-tag"><i class="fa-solid fa-flask" aria-hidden="true"></i> Prototype workflow</span>
+        </div>
     </div>
-    {% if submitted %}<div class="notice notice-success"><i class="fa-solid fa-circle-check" aria-hidden="true"></i>
-        <div><b>Preview only</b><span>No listing was saved or sent. FoodBridge does not yet accept live supplier
-                offers.</span></div>
-    </div>{% endif %}
     <div class="foodbridge-page-grid">
         <section class="panel">
             <div class="panel-heading">
@@ -23,31 +19,35 @@
             <div class="notice notice-warning"><i class="fa-solid fa-triangle-exclamation"
                     aria-hidden="true"></i><span>Only food that is safe, in suitable condition and within its use-by
                     date can be offered. Never list expired or unsafe food.</span></div>
-            <form method="post" class="workflow-form" data-api-endpoint="/api/v1/food-offers/" action="">{% csrf_token %}<label>Food name<input name="food_name" required placeholder="e.g. Fresh produce boxes"></label>
+            <form method="post" class="workflow-form" data-api-endpoint="/api/v1/food-offers/" action="">{% csrf_token %}{{ form.errors }}<label>Food name<input name="food_name" required value="{{ form.food_name.value|default_if_none:'' }}" placeholder="e.g. Fresh produce boxes"></label>
                 <div class="form-row"><label>Category<select name="category" required>
                             <option value="">Choose category</option>
-                            <option value="fresh_produce">Fresh produce</option>
-                            <option value="dry_goods">Dry goods</option>
-                            <option value="dairy">Dairy</option>
-                            <option value="prepared_food">Prepared food</option>
-                            <option value="other">Other</option>
+                            <option value="fresh_produce" {% if form.category.value == "fresh_produce" %}selected{% endif %}>Fresh produce</option>
+                            <option value="dry_goods" {% if form.category.value == "dry_goods" %}selected{% endif %}>Dry goods</option>
+                            <option value="dairy" {% if form.category.value == "dairy" %}selected{% endif %}>Dairy</option>
+                            <option value="prepared_food" {% if form.category.value == "prepared_food" %}selected{% endif %}>Prepared food</option>
+                            <option value="other" {% if form.category.value == "other" %}selected{% endif %}>Other</option>
                         </select></label><label>Available quantity<input name="quantity" type="number" min="1" required
-                            placeholder="Quantity"></label></div>
-                <div class="form-row"><label>Unit<input name="unit" required
+                            value="{{ form.quantity.value|default_if_none:'' }}" placeholder="Quantity"></label></div>
+                <div class="form-row"><label>Unit<input name="unit" required value="{{ form.unit.value|default_if_none:'' }}"
                             placeholder="kg, boxes, crates"></label><label>General collection area<input name="location"
-                            required placeholder="Town or county only"></label></div>
+                            required value="{{ form.location.value|default_if_none:'' }}" placeholder="Town or county only"></label></div>
+                <div class="form-row"><label>Contact name<input name="contact_name" required autocomplete="name"
+                            value="{{ form.contact_name.value|default_if_none:'' }}" placeholder="Your name"></label>
+                    <label>Contact email<input name="contact_email" type="email" required autocomplete="email"
+                            value="{{ form.contact_email.value|default_if_none:'' }}" placeholder="you@example.org"></label></div>
                 <div class="form-row"><label>Collection window<input name="collection_window" required
-                            placeholder="Date and time range"></label><label>Use-by / expiry date<input
-                            name="expiry_date" type="date" required></label></div><label>Handling and storage
+                            value="{{ form.collection_window.value|default_if_none:'' }}" placeholder="Date and time range"></label><label>Use-by / expiry date<input
+                            name="expiry_date" type="date" required value="{{ form.expiry_date.value|default_if_none:'' }}"></label></div><label>Handling and storage
                     requirements<textarea name="handling" rows="3"
-                        placeholder="Temperature, packaging, pickup requirements"></textarea></label><label
+                        >{{ form.handling.value|default_if_none:'' }}</textarea></label><label
                     class="checkbox-label"><input type="checkbox" name="food_safety_confirmed" value="true"
+                        {% if form.food_safety_confirmed.value %}checked{% endif %}
                         required><span>I confirm the food is safe, correctly
                         stored and suitable for redistribution.</span></label><button class="button"
-                    type="submit">Preview listing <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+                    type="submit">Submit listing <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
                 <p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p><small
-                    class="form-footnote">This preview is not saved and does
-                    not arrange collection.</small>
+                    class="form-footnote">Contact details are shared with the coordinator for this offer.</small>
             </form>
         </section>
         <aside class="foodbridge-aside">
@@ -61,12 +61,13 @@
                     </div>
                 </div>
             </div>
-            <div class="panel listing-demo"><span class="demo-tag">Sample listing</span>
-                <h3>Seasonal vegetables</h3>
-                <p>Illustrative supplier offer · Nairobi general area</p>
-                <div class="listing-state"><i class="fa-regular fa-clock" aria-hidden="true"></i><span>Awaiting
-                        eligibility review</span></div><small>Not available for pickup. Demonstration content
-                    only.</small>
+            <div class="panel">
+                <span class="small-label">Before you submit</span>
+                <h3>Keep the offer safe and traceable.</h3>
+                <p>Share a general collection area and a contact address the coordinator can use to arrange a review.
+                    Do not include children’s personal information.</p>
+                <div class="listing-state"><i class="fa-regular fa-clock" aria-hidden="true"></i><span>Every offer
+                        remains pending until reviewed</span></div>
             </div>
         </aside>
     </div>

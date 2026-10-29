@@ -1,18 +1,23 @@
-from decimal import Decimal
+import os
 
 from django.conf import settings
-from django.db.models import Q
+from django.contrib import messages
+from django.db.models import F, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
+from communications.services import send_sms
 from fairmatch.engine import recommend_allocations
 
 from .backend_api import BackendAPIError, get_public_home, get_public_homes
 from .forms import (
     AllocationForm,
     BookingRequestForm,
+    ContributionPledgeForm,
     DonorForm,
     FoodBridgeListingForm,
+    HomeNeedSubmissionForm,
+    HomeRegistrationForm,
     HomeNeedForm,
     HobbyForm,
     ResourceOfferForm,
@@ -98,10 +103,23 @@ def home_profile(request, slug):
             home = get_public_home(slug)
         except BackendAPIError:
             return backend_unavailable(request)
-        return render(request, "firstApp/home_profile.html", {"home": home})
+        return render(
+            request,
+            "firstApp/home_profile.html",
+            {"home": home, "needs": None},
+        )
 
     home = get_object_or_404(ChildrenHome, slug=slug)
-    return render(request, "firstApp/home_profile.html", {"home": home})
+    needs = home.needs.filter(
+        verification_status__in=["verified", "approved"],
+        is_published=True,
+        quantity_fulfilled__lt=F("quantity_requested"),
+    ).order_by("-urgency", "deadline")
+    return render(
+        request,
+        "firstApp/home_profile.html",
+        {"home": home, "needs": needs},
+    )
 
 
 def bookings(request):
@@ -117,20 +135,21 @@ def bookings(request):
         form = BookingRequestForm(request.POST)
         if form.is_valid():
             booking = form.save()
-            return render(
+            contact_phone = booking.home.phone_number or os.environ.get("DEFAULT_CONTACT_PHONE")
+            if contact_phone:
+                send_sms(
+                    [contact_phone],
+                    f"HomeCare Kenya: New visit request from {booking.visitor_name} for {booking.home.name} on {booking.date}.",
+                )
+            messages.success(
                 request,
-                "firstApp/bookings.html",
-                {
-                    "submitted": True,
-                    "homes": homes,
-                    "booking": booking,
-                },
+                "Your visit request is saved and awaiting the organization’s approval. This is not a confirmed visit.",
             )
+            return redirect("Bookings")
         return render(
             request,
             "firstApp/bookings.html",
             {
-                "submitted": False,
                 "homes": homes,
                 "form": form,
             },
@@ -140,7 +159,6 @@ def bookings(request):
         request,
         "firstApp/bookings.html",
         {
-            "submitted": False,
             "homes": homes,
         },
     )
@@ -151,7 +169,20 @@ def events(request):
 
 
 def donations(request):
-    return render(request, "firstApp/donations.html", {"submitted": request.method == "POST"})
+    form_data = request.POST if request.method == "POST" else None
+    form = ContributionPledgeForm(form_data)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(
+            request,
+            "Your contribution pledge is saved for coordinator review. No payment has been processed.",
+        )
+        return redirect("Donations")
+    return render(
+        request,
+        "firstApp/donations.html",
+        {"form": form},
+    )
 
 
 def homed(request):
@@ -167,7 +198,29 @@ def admin(request):
 
 
 def needs_management(request):
-    return render(request, "firstApp/needs.html", {"submitted": request.method == "POST"})
+    homes = ChildrenHome.objects.filter(is_verified=True).order_by("name")
+    form_data = request.POST if request.method == "POST" else None
+    form = HomeNeedSubmissionForm(form_data, homes=homes)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(
+            request,
+            "Your need is saved as pending and will not be published or matched until reviewed.",
+        )
+        return redirect("needs-management")
+    return render(
+        request,
+        "firstApp/needs.html",
+        {
+            "form": form,
+            "needs": HomeNeed.objects.filter(
+                verification_status__in=["verified", "approved"],
+                is_published=True,
+                quantity_fulfilled__lt=F("quantity_requested"),
+            ).select_related("home").order_by("-created_at"),
+            "homes_available": homes.exists(),
+        },
+    )
 
 
 def fairmatch(request):
@@ -206,34 +259,50 @@ def fairmatch(request):
 
 
 def foodbridge(request):
+    form_data = request.POST if request.method == "POST" else None
+    form = FoodBridgeListingForm(form_data)
     if request.method == "POST":
-        form = FoodBridgeListingForm(request.POST)
         if form.is_valid():
             listing = form.save()
-            return render(
+            coordinator_phone = os.environ.get("COORDINATOR_PHONE")
+            if coordinator_phone:
+                send_sms(
+                    [coordinator_phone],
+                    f"HomeCare Kenya: New FoodBridge listing received: {listing.food_name} ({listing.quantity} {listing.unit}) for {listing.location}.",
+                )
+            messages.success(
                 request,
-                "firstApp/foodbridge.html",
-                {
-                    "submitted": True,
-                    "listing": listing,
-                },
+                "Your FoodBridge offer is saved for coordinator review. It will not be matched or allocated until approved.",
             )
+            return redirect("foodbridge")
         return render(
             request,
             "firstApp/foodbridge.html",
             {
-                "submitted": False,
                 "form": form,
             },
         )
-    return render(request, "firstApp/foodbridge.html", {"submitted": False})
+    return render(
+        request,
+        "firstApp/foodbridge.html",
+        {"form": form},
+    )
 
 
 def home_registration(request):
+    form_data = request.POST if request.method == "POST" else None
+    form = HomeRegistrationForm(form_data)
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(
+            request,
+            "Your organization details are saved and awaiting review. This submission does not verify the organization.",
+        )
+        return redirect("home-register")
     return render(
         request,
         "firstApp/home_registration.html",
-        {"submitted": request.method == "POST", "counties": ChildrenHome.COUNTY_CHOICES},
+        {"form": form},
     )
 
 
@@ -393,6 +462,7 @@ def match_resource_offer(request, offer_id):
     offer = get_object_or_404(ResourceOffer, id=offer_id)
     needs = HomeNeed.objects.filter(
         verification_status__in=["verified", "approved"],
+        is_published=True,
         resource_type__iexact=offer.resource_type,
     ).select_related("home")
 

@@ -6,81 +6,137 @@
         <div>
             <p class="eyebrow">Organization workspace</p>
             <h1>Needs management</h1>
-            <p>Publish specific, current requests and keep requested, fulfilled and remaining quantities distinct.</p>
+            <p>Submit a current request for review. Approved needs are kept separate from pledges and fulfilled
+                quantities.</p>
         </div>
-        <span class="demo-tag">Demonstration workspace</span>
     </div>
-    <div class="notice notice-warning"><i class="fa-solid fa-lock" aria-hidden="true"></i><span>This preview is not
-            authenticated. Do not enter real organization needs or sensitive information.</span></div>
-    {% if submitted %}
-    <div class="notice notice-success"><i class="fa-solid fa-circle-check" aria-hidden="true"></i>
-        <div><b>Need preview created</b><span>No request was saved, verified or made visible to donors.</span></div>
-    </div>
-    {% endif %}
     <div class="needs-workspace">
         <form class="panel workflow-form" method="post" data-api-endpoint="/api/v1/needs/">
             {% csrf_token %}
+            {{ form.non_field_errors }}
             <div class="panel-heading">
-                <div><span class="small-label">New request</span>
+                <div>
+                    <span class="small-label">New request</span>
                     <h2>Describe an outstanding need</h2>
-                </div><span class="panel-icon"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i></span>
+                </div>
+                <span class="panel-icon"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i></span>
             </div>
-            <label>Need title<input name="title" required placeholder="Specific item or resource"></label>
-            <div class="form-row"><label>Category<select name="category" required>
+            {% if homes_available %}
+            <label>Organization
+                <select name="home" required>
+                    <option value="">Choose an organization</option>
+                    {% for home in form.home.field.queryset %}
+                    <option value="{{ home.pk }}" {% if form.home.value|stringformat:"s" == home.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ home.name }} · {{ home.location }}
+                    </option>
+                    {% endfor %}
+                </select>
+                {{ form.home.errors }}
+            </label>
+            <label>Need title
+                <input name="title" maxlength="120" required value="{{ form.title.value|default_if_none:'' }}"
+                    placeholder="Specific item or resource">
+                {{ form.title.errors }}
+            </label>
+            <div class="form-row">
+                <label>Category
+                    <select name="category" required>
                         <option value="">Select category</option>
-                        <option value="food">Food</option>
-                        <option value="clothing">Clothing</option>
-                        <option value="school_supplies">School supplies</option>
-                        <option value="hygiene">Hygiene</option>
-                        <option value="bedding">Bedding</option>
-                        <option value="other">Other essential goods</option>
-                    </select></label><label>Quantity requested<input type="number" name="quantity" min="1"
-                        required></label></div>
-            <div class="form-row"><label>Unit<input name="unit" required
-                        placeholder="items, kg, packs"></label><label>Urgency<select name="urgency" required>
+                        {% for value, label in form.category.field.choices %}
+                        <option value="{{ value }}" {% if form.category.value == value %}selected{% endif %}>
+                            {{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    {{ form.category.errors }}
+                </label>
+                <label>Quantity requested
+                    <input name="quantity" type="number" step="0.01" min="0.01" required
+                        value="{{ form.quantity.value|default_if_none:'' }}">
+                    {{ form.quantity.errors }}
+                </label>
+            </div>
+            <div class="form-row">
+                <label>Unit
+                    <input name="unit" maxlength="20" required value="{{ form.unit.value|default_if_none:'' }}"
+                        placeholder="items, kg, packs">
+                    {{ form.unit.errors }}
+                </label>
+                <label>Urgency
+                    <select name="urgency" required>
                         <option value="">Select urgency</option>
-                        <option value="1">1 · Routine</option>
-                        <option value="2">2 · Soon</option>
-                        <option value="3">3 · Important</option>
-                        <option value="4">4 · High</option>
-                        <option value="5">5 · Critical</option>
-                    </select></label></div>
-            <div class="form-row"><label>Requested by<input type="date" name="deadline"></label><label>Storage
-                    capacity<select name="storage_capacity_available">
-                        <option value="true">Confirm available</option>
-                        <option value="false">Not available</option>
-                    </select></label></div>
-            <label>Reason for request<textarea name="reason" rows="3" required
-                    placeholder="Explain the current need"></textarea></label>
-            <button class="button" type="submit">Preview need <i class="fa-solid fa-arrow-right"
-                    aria-hidden="true"></i></button>
+                        {% for value, label in form.urgency.field.choices %}
+                        <option value="{{ value }}" {% if form.urgency.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    {{ form.urgency.errors }}
+                </label>
+            </div>
+            <div class="form-row">
+                <label>Requested by
+                    <input type="date" name="deadline" value="{{ form.deadline.value|default_if_none:'' }}">
+                    {{ form.deadline.errors }}
+                </label>
+                <label>Storage capacity
+                    <select name="storage_capacity_available" required>
+                        {% for value, label in form.storage_capacity_available.field.choices %}
+                        <option value="{{ value }}" {% if form.storage_capacity_available.value|stringformat:"s" == value|stringformat:"s" %}selected{% endif %}>
+                            {{ label }}</option>
+                        {% endfor %}
+                    </select>
+                    {{ form.storage_capacity_available.errors }}
+                </label>
+            </div>
+            <label>Reason for request
+                <textarea name="reason" rows="3" maxlength="2000" required
+                    placeholder="Explain the current need">{{ form.reason.value|default_if_none:'' }}</textarea>
+                {{ form.reason.errors }}
+            </label>
+            <button class="button" type="submit">Submit need for review
+                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            </button>
+            {% else %}
+            <div class="notice notice-warning">
+                <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                <span>There are no verified organizations available for a need request yet. Register an organization
+                    first.</span>
+            </div>
+            <a class="button" href="{% url 'home-register' %}">Register an organization</a>
+            {% endif %}
             <p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p>
-            <small class="form-footnote">A real workflow should verify requests and prevent reserved quantities from
-                being allocated twice.</small>
+            <small class="form-footnote">Submitted needs remain pending until an administrator verifies them. Only
+                verified, outstanding quantities are considered by FairMatch.</small>
         </form>
         <section class="panel needs-list-panel">
             <div class="panel-heading">
-                <div><span class="small-label">Current requests</span>
+                <div>
+                    <span class="small-label">Verified requests</span>
                     <h2>Outstanding needs</h2>
-                </div><span class="demo-tag">Sample only</span>
-            </div>
-            <div class="need-row">
-                <div><span class="status-pill status-open">Partially fulfilled</span>
-                    <h3>Exercise books</h3><span class="small-label">School supplies · sample organization</span>
                 </div>
-                <div class="need-units"><b>56</b><span>of 120 remaining</span></div>
-                <div class="need-row-meta"><span>Urgency 4/5</span><span>Verification: sample</span></div>
             </div>
+            {% for need in needs %}
             <div class="need-row">
-                <div><span class="status-pill status-review">Submitted</span>
-                    <h3>Dry food staples</h3><span class="small-label">Food · sample organization</span>
+                <div>
+                    <span class="status-pill status-open">Verified</span>
+                    <h3>{{ need.resource_type }}</h3>
+                    <span class="small-label">{{ need.get_category_display }} · {{ need.home.name }}</span>
                 </div>
-                <div class="need-units"><b>22</b><span>of 40 remaining</span></div>
-                <div class="need-row-meta"><span>Urgency 3/5</span><span>Verification: pending</span></div>
+                <div class="need-units">
+                    <b>{{ need.outstanding_quantity }}</b>
+                    <span>{{ need.unit }} remaining</span>
+                </div>
+                <div class="need-row-meta">
+                    <span>Urgency {{ need.urgency }}/5</span>
+                    <span>Requested {{ need.quantity_requested }} {{ need.unit }}</span>
+                </div>
             </div>
-            <div class="need-integrity"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Only verified,
-                    outstanding quantities should be considered by FairMatch. A pledge is not counted as
-                    fulfillment.</span></div>
+            {% empty %}
+            <p class="empty-state">No verified outstanding needs are currently available.</p>
+            {% endfor %}
+            <div class="need-integrity">
+                <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                <span>A pledge is not counted as fulfillment. Quantities change only after a delivery is confirmed.</span>
+            </div>
         </section>
     </div>
 </section>
