@@ -7,52 +7,75 @@
             <p class="eyebrow">A shared community calendar</p>
             <h1>Community & events</h1>
             <p>Activities shared by organizations can bring neighbors, volunteers and homes together.</p>
-        </div><span class="demo-tag"><i class="fa-solid fa-flask" aria-hidden="true"></i> Sample events</span>
+        </div>
     </div>
     <div class="event-toolbar">
-        <div><b>Upcoming events</b><span>Illustrative listings for the interface prototype</span></div><a
-            class="button button-small" href="{% url 'home-register' %}"><i class="fa-solid fa-plus"
-                aria-hidden="true"></i> Post as an organization</a>
+        <div><b>Upcoming events</b><span>Published community activities</span></div>
+        <a class="button button-small" href="{% url 'home-register' %}">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i> Register your organization
+        </a>
     </div>
     <div class="event-grid">
+        {% for event in events %}
         <article class="event-card">
-            <div class="event-art event-art-green"><span class="event-day">08</span><span
-                    class="event-month">NOV</span><i class="fa-solid fa-volleyball" aria-hidden="true"></i></div>
-            <div class="event-copy"><span class="small-label">Demo · Nairobi County</span>
-                <h2>Community sports afternoon</h2>
-                <p>Neighbourhood teams meet for friendly games and a shared lunch.</p>
-                <div class="event-meta"><span><i class="fa-regular fa-clock" aria-hidden="true"></i> 10:00 am · sample
-                        time</span><span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> General location
-                        shared after approval</span></div><a class="text-link" href="{% url 'Bookings' %}">View event
-                    details <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+            <div class="event-art event-art-green">
+                <span class="event-day">{{ event.event_date|date:"d" }}</span>
+                <span class="event-month">{{ event.event_date|date:"M" }}</span>
+                <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+            </div>
+            <div class="event-copy">
+                <span class="small-label">{{ event.location }}</span>
+                <h2>{{ event.title }}</h2>
+                <p>{{ event.details }}</p>
+                <div class="event-meta">
+                    <span><i class="fa-regular fa-clock" aria-hidden="true"></i>
+                        {% if event.event_time %}{{ event.event_time|time:"g:i a" }}{% else %}Time to be announced{% endif %}
+                    </span>
+                    <span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ event.location }}</span>
+                </div>
             </div>
         </article>
-        <article class="event-card">
-            <div class="event-art event-art-sand"><span class="event-day">15</span><span
-                    class="event-month">NOV</span><i class="fa-solid fa-book-open" aria-hidden="true"></i></div>
-            <div class="event-copy"><span class="small-label">Demo · Nakuru County</span>
-                <h2>Books & learning materials drive</h2>
-                <p>A community collection day for suitable school and reading supplies.</p>
-                <div class="event-meta"><span><i class="fa-regular fa-clock" aria-hidden="true"></i> 9:00 am · sample
-                        time</span><span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> General location
-                        shared after approval</span></div><a class="text-link" href="{% url 'Donations' %}">Explore ways
-                    to support <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
-            </div>
-        </article>
-        <article class="event-card">
-            <div class="event-art event-art-red"><span class="event-day">22</span><span class="event-month">NOV</span><i
-                    class="fa-solid fa-seedling" aria-hidden="true"></i></div>
-            <div class="event-copy"><span class="small-label">Demo · Kiambu County</span>
-                <h2>Shared garden morning</h2>
-                <p>Volunteers help prepare a growing space and learn about local food.</p>
-                <div class="event-meta"><span><i class="fa-regular fa-clock" aria-hidden="true"></i> 8:30 am · sample
-                        time</span><span><i class="fa-solid fa-location-dot" aria-hidden="true"></i> General location
-                        shared after approval</span></div><a class="text-link" href="{% url 'Bookings' %}">Request a
-                    visit <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
-            </div>
-        </article>
+        {% empty %}
+        <p>No upcoming events have been published yet. Check back soon.</p>
+        {% endfor %}
     </div>
-    <div class="privacy-callout"><i class="fa-solid fa-shield-heart" aria-hidden="true"></i>
+    <section class="panel workflow-form" aria-labelledby="event-sms-heading">
+        <h2 id="event-sms-heading">Get event reminders by SMS</h2>
+        <p>Subscribe to receive a reminder three days before published upcoming events. If a scheduled send fails, the reminder may be retried during the final three days before the event.</p>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="subscribe">
+            {{ subscription_form.non_field_errors }}
+            <label>Mobile phone number
+                <input name="phone_number" type="tel" autocomplete="tel" inputmode="tel"
+                    value="{{ subscription_form.phone_number.value|default_if_none:'' }}"
+                    placeholder="+254712345678" required>
+                {{ subscription_form.phone_number.errors }}
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" name="consent" value="true"
+                    {% if subscription_form.consent.value %}checked{% endif %} required>
+                <span>I agree to receive SMS reminders about upcoming HomeCare Kenya events.</span>
+                {{ subscription_form.consent.errors }}
+            </label>
+            <button class="button" type="submit">Subscribe to event SMS</button>
+        </form>
+        <hr>
+        <h3>Stop event reminders</h3>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="unsubscribe">
+            <label>Mobile phone number
+                <input name="phone_number" type="tel" autocomplete="tel" inputmode="tel"
+                    value="{{ unsubscribe_form.phone_number.value|default_if_none:'' }}"
+                    placeholder="+254712345678" required>
+                {{ unsubscribe_form.phone_number.errors }}
+            </label>
+            <button class="button button-small" type="submit">Unsubscribe</button>
+        </form>
+    </section>
+    <div class="privacy-callout">
+        <i class="fa-solid fa-shield-heart" aria-hidden="true"></i>
         <p>Event details must be reviewed by the host organization. Children's schedules and private activities are
             never published.</p>
     </div>

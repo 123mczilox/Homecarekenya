@@ -1,5 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
+from django.core.validators import RegexValidator
 from django.db.models import F
 from django.utils import timezone
 from django.forms import ModelForm
@@ -16,6 +17,7 @@ from .models import (
     Hobby,
     ResourceOffer,
     Student,
+    EventSmsSubscriber,
 )
 
 
@@ -131,6 +133,17 @@ class HomeRegistrationForm(ModelForm):
 
 class ContributionPledgeForm(ModelForm):
     pledge_acknowledged = forms.BooleanField(required=True)
+    phone_number = forms.CharField(
+        required=False,
+        max_length=16,
+        validators=[
+            RegexValidator(
+                regex=r"^\+[1-9]\d{7,14}$",
+                message="Enter a phone number in international format, such as +254712345678.",
+            )
+        ],
+    )
+    sms_consent = forms.BooleanField(required=False)
     need = forms.ModelChoiceField(
         queryset=HomeNeed.objects.none(),
         required=False,
@@ -147,6 +160,8 @@ class ContributionPledgeForm(ModelForm):
             'quantity',
             'donor_name',
             'email',
+            'phone_number',
+            'sms_consent',
             'pledge_acknowledged',
         ]
 
@@ -164,7 +179,45 @@ class ContributionPledgeForm(ModelForm):
             self.add_error('need', 'Choose a verified outstanding need.')
         if cleaned_data.get('direction') == 'fairmatch':
             cleaned_data['need'] = None
+        if cleaned_data.get('sms_consent') and not cleaned_data.get('phone_number'):
+            self.add_error('phone_number', 'Enter a phone number to receive SMS updates.')
         return cleaned_data
+
+
+class EventSmsSubscriptionForm(forms.Form):
+    phone_number = forms.CharField(
+        max_length=16,
+        validators=[
+            RegexValidator(
+                regex=r"^\+[1-9]\d{7,14}$",
+                message="Enter a phone number in international format, such as +254712345678.",
+            )
+        ],
+    )
+    consent = forms.BooleanField(
+        required=True,
+        error_messages={"required": "Consent is required to receive event SMS alerts."},
+    )
+
+    def save(self):
+        phone_number = self.cleaned_data["phone_number"]
+        subscriber, _ = EventSmsSubscriber.objects.update_or_create(
+            phone_number=phone_number,
+            defaults={"is_active": True, "consented_at": timezone.now()},
+        )
+        return subscriber
+
+
+class EventSmsUnsubscribeForm(forms.Form):
+    phone_number = forms.CharField(
+        max_length=16,
+        validators=[
+            RegexValidator(
+                regex=r"^\+[1-9]\d{7,14}$",
+                message="Enter a phone number in international format, such as +254712345678.",
+            )
+        ],
+    )
 
 
 class HomeNeedSubmissionForm(forms.Form):

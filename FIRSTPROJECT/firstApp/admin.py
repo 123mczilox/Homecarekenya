@@ -4,8 +4,10 @@ from .models import (
     Allocation,
     BookingRequest,
     ChildrenHome,
+    CommunityEvent,
     ContributionPledge,
     Donor,
+    EventSmsSubscriber,
     FoodBridgeListing,
     HomeNeed,
     HomeRegistration,
@@ -41,10 +43,36 @@ class HomeRegistrationAdmin(admin.ModelAdmin):
 
 @admin.register(ContributionPledge)
 class ContributionPledgeAdmin(admin.ModelAdmin):
-    list_display = ('donor_name', 'resource_type', 'quantity', 'direction', 'need', 'status', 'created_at')
+    list_display = (
+        'donor_name',
+        'phone_number',
+        'sms_consent',
+        'resource_type',
+        'quantity',
+        'direction',
+        'need',
+        'status',
+        'created_at',
+    )
     list_filter = ('status', 'resource_type', 'direction')
-    search_fields = ('donor_name', 'email', 'description')
+    search_fields = ('donor_name', 'email', 'phone_number', 'description')
     readonly_fields = ('created_at', 'updated_at')
+
+
+@admin.register(CommunityEvent)
+class CommunityEventAdmin(admin.ModelAdmin):
+    list_display = ('title', 'event_date', 'event_time', 'location', 'is_published', 'reminder_sent_at')
+    list_filter = ('is_published', 'event_date')
+    search_fields = ('title', 'details', 'location')
+    readonly_fields = ('reminder_sent_at', 'created_at', 'updated_at')
+
+
+@admin.register(EventSmsSubscriber)
+class EventSmsSubscriberAdmin(admin.ModelAdmin):
+    list_display = ('phone_number', 'is_active', 'consented_at')
+    list_filter = ('is_active',)
+    search_fields = ('phone_number',)
+    readonly_fields = ('created_at', 'consented_at')
 
 
 @admin.register(HomeNeed)

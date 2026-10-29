@@ -1,10 +1,13 @@
+import logging
 import os
+from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.contrib import messages
 from django.db.models import F, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from communications.services import send_sms
 from fairmatch.engine import recommend_allocations
@@ -15,6 +18,8 @@ from .forms import (
     BookingRequestForm,
     ContributionPledgeForm,
     DonorForm,
+    EventSmsSubscriptionForm,
+    EventSmsUnsubscribeForm,
     FoodBridgeListingForm,
     HomeNeedSubmissionForm,
     HomeRegistrationForm,
@@ -27,13 +32,18 @@ from .models import (
     Allocation,
     BookingRequest,
     ChildrenHome,
+    CommunityEvent,
     Donor,
+    EventSmsSubscriber,
     FoodBridgeListing,
     HomeNeed,
     Hobby,
     ResourceOffer,
     Student,
 )
+
+logger = logging.getLogger(__name__)
+EVENT_TIME_ZONE = ZoneInfo("Africa/Nairobi")
 
 
 def backend_unavailable(request):
@@ -165,18 +175,85 @@ def bookings(request):
 
 
 def events(request):
-    return render(request, "firstApp/events.html")
+    subscription_form = EventSmsSubscriptionForm()
+    unsubscribe_form = EventSmsUnsubscribeForm()
+    if request.method == "POST" and request.POST.get("action") == "unsubscribe":
+        unsubscribe_form = EventSmsUnsubscribeForm(request.POST)
+        if unsubscribe_form.is_valid():
+            EventSmsSubscriber.objects.filter(
+                phone_number=unsubscribe_form.cleaned_data["phone_number"],
+                is_active=True,
+            ).update(is_active=False)
+            messages.success(request, "If that number was subscribed, it is now unsubscribed.")
+            return redirect("events")
+    elif request.method == "POST":
+        subscription_form = EventSmsSubscriptionForm(request.POST)
+        if subscription_form.is_valid():
+            subscription_form.save()
+            messages.success(request, "You are subscribed to upcoming event SMS alerts.")
+            return redirect("events")
+
+    return render(
+        request,
+        "firstApp/events.html",
+        {
+            "events": CommunityEvent.objects.filter(
+                is_published=True,
+                event_date__gte=timezone.localdate(timezone=EVENT_TIME_ZONE),
+            ),
+            "subscription_form": subscription_form,
+            "unsubscribe_form": unsubscribe_form,
+        },
+    )
 
 
 def donations(request):
     form_data = request.POST if request.method == "POST" else None
     form = ContributionPledgeForm(form_data)
     if request.method == "POST" and form.is_valid():
-        form.save()
-        messages.success(
-            request,
-            "Your contribution pledge is saved for coordinator review. No payment has been processed.",
+        pledge = form.save()
+        sms_failures = []
+        coordinator_phone = os.environ.get("COORDINATOR_PHONE", "").strip()
+        if coordinator_phone:
+            coordinator_result = send_sms(
+                [coordinator_phone],
+                (
+                    f"HomeCare Kenya: New {pledge.get_resource_type_display()} pledge "
+                    f"from {pledge.donor_name}: {pledge.quantity} "
+                    f"{pledge.description}. Review pending pledge in admin."
+                ),
+            )
+            if coordinator_result.get("status") != "sent":
+                sms_failures.append("coordinator")
+                logger.warning("Donation pledge SMS alert to coordinator failed: %s", coordinator_result)
+        else:
+            sms_failures.append("coordinator")
+            logger.warning("Donation pledge saved, but COORDINATOR_PHONE is not configured.")
+
+        if pledge.phone_number and pledge.sms_consent:
+            donor_result = send_sms(
+                [pledge.phone_number],
+                (
+                    f"HomeCare Kenya: Thank you, {pledge.donor_name}. "
+                    "Your contribution pledge is saved for coordinator review. "
+                    "No payment has been processed."
+                ),
+            )
+            if donor_result.get("status") != "sent":
+                sms_failures.append("donor")
+                logger.warning("Donation pledge SMS confirmation to donor failed: %s", donor_result)
+
+        success_message = (
+            "Your contribution pledge is saved for coordinator review. "
+            "No payment has been processed."
         )
+        if sms_failures:
+            messages.warning(
+                request,
+                f"{success_message} An SMS notification could not be sent; the coordinator may need to follow up.",
+            )
+        else:
+            messages.success(request, success_message)
         return redirect("Donations")
     return render(
         request,

@@ -93,6 +93,17 @@
                 {{ form.email.errors }}
             </label>
         </div>
+        <label>Phone number (optional)
+            <input name="phone_number" type="tel" autocomplete="tel" inputmode="tel"
+                value="{{ form.phone_number.value|default_if_none:'' }}" placeholder="+254712345678">
+            {{ form.phone_number.errors }}
+        </label>
+        <label class="checkbox-label">
+            <input type="checkbox" name="sms_consent" value="true"
+                {% if form.sms_consent.value %}checked{% endif %}>
+            <span>I agree to receive an SMS confirmation about this contribution pledge.</span>
+            {{ form.sms_consent.errors }}
+        </label>
         <label class="checkbox-label">
             <input type="checkbox" name="pledge_acknowledged" value="true" required>
             <span>I understand this records a pledge for review and does not process a payment or confirm delivery.</span>

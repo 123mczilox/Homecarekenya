@@ -40,7 +40,7 @@ as JSON numbers. The CSRF token is removed from the JSON body and sent in the `X
 | --- | --- |
 | Organization registration | `name`, `location`, `email`, `phone_number`, `website_url`, `description`, `verification_acknowledged` |
 | Need submission | `home`, `title`, `category`, `quantity`, `unit`, `urgency`, `deadline`, `storage_capacity_available`, `reason` |
-| Contribution pledge | `resource_type`, `direction`, `need`, `description`, `quantity`, `donor_name`, `email`, `pledge_acknowledged` |
+| Contribution pledge | `resource_type`, `direction`, `need`, `description`, `quantity`, `donor_name`, `email`, `phone_number`, `sms_consent`, `pledge_acknowledged` |
 | FoodBridge offer | `food_name`, `category`, `contact_name`, `contact_email`, `quantity`, `unit`, `location`, `collection_window`, `expiry_date`, `handling`, `food_safety_confirmed` |
 | Visit request | `home`, `date`, `time`, `visitor_count`, `visitor_name`, `email`, `purpose`, `notes`, `visitor_conduct_accepted` |
 
@@ -79,6 +79,26 @@ shown to the user rather than silently saved to a different backend.
 - FoodBridge listings and visit requests start with `status=pending_review`. Coordinator approval is separate from
   submission and does not imply that a match, visit or delivery has been confirmed.
 - Contact and consent details are stored with their related submission and can be reviewed in Django admin.
+
+## SMS notifications
+
+Set `AT_USERNAME`, `AT_API_KEY`, and `COORDINATOR_PHONE` in the deployment environment. The coordinator receives
+an SMS when a contribution pledge is submitted. Donors receive a confirmation only when they provide a phone number
+in international format and explicitly consent to SMS updates.
+
+Create and publish events in Django admin. Visitors can subscribe to event reminders on `/events/` by providing an
+international-format phone number and explicit consent. Configure a daily Render Cron Job using the same environment
+variables and database as the web service:
+
+```sh
+python manage.py send_event_reminders
+```
+
+The command sends a reminder once per published event, three days before its date; if a send fails or the scheduled
+run is missed, it retries on later daily runs up to the event date. Subscribers can unsubscribe from `/events/`.
+Keep `COORDINATOR_PHONE` and Africa's Talking credentials private; do not put them in source control or client-side
+code. If `HOMECARE_API_BASE_URL` points to a separate API, that service must also store the new pledge phone/consent
+fields and trigger pledge SMS itself; Django does not receive writes sent directly to that API.
 
 ## Production responsibilities
 

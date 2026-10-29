@@ -1,4 +1,12 @@
+from django.core.validators import RegexValidator
 from django.db import models
+from django.utils import timezone
+
+
+international_phone_validator = RegexValidator(
+    regex=r"^\+[1-9]\d{7,14}$",
+    message="Enter a phone number in international format, such as +254712345678.",
+)
 
 
 class ChildrenHome(models.Model):
@@ -259,6 +267,15 @@ class ContributionPledge(models.Model):
     quantity = models.CharField(max_length=100)
     donor_name = models.CharField(max_length=150)
     email = models.EmailField()
+    phone_number = models.CharField(
+        max_length=16,
+        blank=True,
+        validators=[international_phone_validator],
+    )
+    sms_consent = models.BooleanField(
+        default=False,
+        help_text="The donor agrees to receive SMS updates about this pledge.",
+    )
     pledge_acknowledged = models.BooleanField(default=False)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_review')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -266,3 +283,38 @@ class ContributionPledge(models.Model):
 
     def __str__(self):
         return f'{self.get_resource_type_display()} pledge from {self.donor_name}'
+
+
+class CommunityEvent(models.Model):
+    title = models.CharField(max_length=160)
+    details = models.TextField()
+    event_date = models.DateField()
+    event_time = models.TimeField(blank=True, null=True)
+    location = models.CharField(max_length=200)
+    is_published = models.BooleanField(default=False)
+    reminder_sent_at = models.DateTimeField(blank=True, null=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["event_date", "event_time", "title"]
+
+    def __str__(self):
+        return f"{self.title} ({self.event_date})"
+
+
+class EventSmsSubscriber(models.Model):
+    phone_number = models.CharField(
+        max_length=16,
+        unique=True,
+        validators=[international_phone_validator],
+    )
+    is_active = models.BooleanField(default=True)
+    consented_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["phone_number"]
+
+    def __str__(self):
+        return self.phone_number

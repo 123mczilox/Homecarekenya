@@ -1,11 +1,18 @@
+from datetime import timedelta
+from unittest.mock import patch
+from zoneinfo import ZoneInfo
+
+from django.core.management import call_command, CommandError
 from django.test import TestCase
 from django.test import override_settings
-from unittest.mock import patch
+from django.utils import timezone
 
 from .backend_api import BackendAPIError
 from .models import (
     ChildrenHome,
+    CommunityEvent,
     ContributionPledge,
+    EventSmsSubscriber,
     FoodBridgeListing,
     HomeNeed,
     HomeRegistration,
@@ -155,7 +162,8 @@ class HomeCarePrototypeTests(TestCase):
         self.assertContains(response, "40.0 books")
         self.assertContains(response, "Review required")
 
-    def test_contribution_form_persists_a_pending_pledge(self):
+    @patch("firstApp.views.send_sms", return_value={"status": "sent"})
+    def test_contribution_form_persists_a_pending_pledge(self, _mock_send_sms):
         home = ChildrenHome.objects.create(
             name="Sample Pledge Home",
             slug="sample-pledge-home",
@@ -199,6 +207,202 @@ class HomeCarePrototypeTests(TestCase):
         self.assertEqual(pledge.status, "pending_review")
         self.assertEqual(pledge.quantity, "KES 2,000")
         self.assertEqual(pledge.need, need)
+
+    @patch.dict("os.environ", {"COORDINATOR_PHONE": "+254700000002"})
+    @patch("firstApp.views.send_sms", return_value={"status": "sent"})
+    def test_contribution_pledge_sends_sms_to_coordinator_and_consented_donor(
+        self, mock_send_sms
+    ):
+        response = self.client.post(
+            "/donations/",
+            {
+                "resource_type": "money",
+                "direction": "fairmatch",
+                "description": "School supplies",
+                "quantity": "KES 2,000",
+                "donor_name": "Amina Wanjiku",
+                "email": "amina@example.test",
+                "phone_number": "+254700000001",
+                "sms_consent": "true",
+                "pledge_acknowledged": "true",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        pledge = ContributionPledge.objects.get()
+        self.assertEqual(pledge.phone_number, "+254700000001")
+        self.assertTrue(pledge.sms_consent)
+        self.assertEqual(mock_send_sms.call_count, 2)
+        self.assertEqual(mock_send_sms.call_args_list[0].args[0], ["+254700000002"])
+        self.assertEqual(mock_send_sms.call_args_list[1].args[0], ["+254700000001"])
+
+    @patch.dict("os.environ", {"COORDINATOR_PHONE": "+254700000002"})
+    @patch("firstApp.views.send_sms", return_value={"status": "sent"})
+    def test_donor_without_sms_consent_only_triggers_coordinator_alert(
+        self, mock_send_sms
+    ):
+        response = self.client.post(
+            "/donations/",
+            {
+                "resource_type": "food",
+                "direction": "fairmatch",
+                "description": "Rice",
+                "quantity": "10 bags",
+                "donor_name": "Amina Wanjiku",
+                "email": "amina@example.test",
+                "phone_number": "+254700000001",
+                "pledge_acknowledged": "true",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        pledge = ContributionPledge.objects.get()
+        self.assertFalse(pledge.sms_consent)
+        mock_send_sms.assert_called_once()
+        self.assertEqual(mock_send_sms.call_args.args[0], ["+254700000002"])
+
+    def test_event_subscriber_requires_consent_and_valid_international_phone(self):
+        response = self.client.post(
+            "/events/",
+            {"phone_number": "+254700000001"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(EventSmsSubscriber.objects.exists())
+
+        response = self.client.post(
+            "/events/",
+            {"phone_number": "0700000001", "consent": "true"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(EventSmsSubscriber.objects.exists())
+
+        response = self.client.post(
+            "/events/",
+            {
+                "action": "subscribe",
+                "phone_number": "+254700000001",
+                "consent": "true",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(EventSmsSubscriber.objects.get().is_active)
+
+    def test_event_subscriber_can_unsubscribe(self):
+        EventSmsSubscriber.objects.create(phone_number="+254700000001")
+
+        response = self.client.post(
+            "/events/",
+            {"action": "unsubscribe", "phone_number": "+254700000001"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(EventSmsSubscriber.objects.get().is_active)
+
+    def test_event_page_only_displays_published_upcoming_events(self):
+        local_event_date = timezone.localdate(timezone=ZoneInfo("Africa/Nairobi"))
+        upcoming = CommunityEvent.objects.create(
+            title="Upcoming community day",
+            details="A public community event.",
+            event_date=local_event_date + timedelta(days=4),
+            location="Nairobi",
+            is_published=True,
+        )
+        CommunityEvent.objects.create(
+            title="Unpublished event",
+            details="Not public.",
+            event_date=local_event_date + timedelta(days=5),
+            location="Nairobi",
+        )
+        CommunityEvent.objects.create(
+            title="Past event",
+            details="Already happened.",
+            event_date=local_event_date - timedelta(days=1),
+            location="Nairobi",
+            is_published=True,
+        )
+
+        response = self.client.get("/events/")
+
+        self.assertContains(response, upcoming.title)
+        self.assertNotContains(response, "Unpublished event")
+        self.assertNotContains(response, "Past event")
+
+    @patch(
+        "firstApp.management.commands.send_event_reminders.send_event_sms",
+        return_value={"status": "sent"},
+    )
+    def test_event_reminder_command_sends_once_three_days_before_event(
+        self, mock_send_event_sms
+    ):
+        EventSmsSubscriber.objects.create(phone_number="+254700000001")
+        event = CommunityEvent.objects.create(
+            title="Community sports afternoon",
+            details="Friendly games and lunch.",
+            event_date=timezone.localdate(timezone=ZoneInfo("Africa/Nairobi"))
+            + timedelta(days=3),
+            event_time="10:00",
+            location="Nairobi",
+            is_published=True,
+        )
+
+        call_command("send_event_reminders")
+
+        mock_send_event_sms.assert_called_once()
+        self.assertEqual(
+            mock_send_event_sms.call_args.args[0],
+            ["+254700000001"],
+        )
+        event.refresh_from_db()
+        self.assertIsNotNone(event.reminder_sent_at)
+        call_command("send_event_reminders")
+        mock_send_event_sms.assert_called_once()
+
+    @patch(
+        "firstApp.management.commands.send_event_reminders.send_event_sms",
+        return_value={"status": "sent"},
+    )
+    def test_event_reminder_command_retries_events_within_three_day_window(
+        self, mock_send_event_sms
+    ):
+        EventSmsSubscriber.objects.create(phone_number="+254700000001")
+        event = CommunityEvent.objects.create(
+            title="Reminder retry",
+            details="A reminder whose scheduled run was missed.",
+            event_date=timezone.localdate(timezone=ZoneInfo("Africa/Nairobi"))
+            + timedelta(days=2),
+            location="Nairobi",
+            is_published=True,
+        )
+
+        call_command("send_event_reminders")
+
+        mock_send_event_sms.assert_called_once()
+        event.refresh_from_db()
+        self.assertIsNotNone(event.reminder_sent_at)
+
+    @patch(
+        "firstApp.management.commands.send_event_reminders.send_event_sms",
+        return_value={"status": "failed", "error": "Provider unavailable"},
+    )
+    def test_failed_event_reminder_is_reported_and_remains_retryable(
+        self, mock_send_event_sms
+    ):
+        EventSmsSubscriber.objects.create(phone_number="+254700000001")
+        event = CommunityEvent.objects.create(
+            title="Community sports afternoon",
+            details="Friendly games and lunch.",
+            event_date=timezone.localdate(timezone=ZoneInfo("Africa/Nairobi"))
+            + timedelta(days=3),
+            location="Nairobi",
+            is_published=True,
+        )
+
+        with self.assertRaises(CommandError):
+            call_command("send_event_reminders")
+
+        mock_send_event_sms.assert_called_once()
+        event.refresh_from_db()
+        self.assertIsNone(event.reminder_sent_at)
 
     def test_unpublished_need_is_not_offered_to_contributors(self):
         home = ChildrenHome.objects.create(
