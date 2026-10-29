@@ -1,5 +1,6 @@
 from django.forms import ModelForm
-from .models import Student, Hobby , ChildrenHome
+
+from .models import Allocation, ChildrenHome, Donor, HomeNeed, Hobby, ResourceOffer, Student
 
 
 class StudentForm(ModelForm):
@@ -17,4 +18,28 @@ class HobbyForm(ModelForm):
 class ChildrenHomeForm(ModelForm):
     class Meta:
         model = ChildrenHome
+        fields = '__all__'
+
+
+class DonorForm(ModelForm):
+    class Meta:
+        model = Donor
+        fields = '__all__'
+
+
+class ResourceOfferForm(ModelForm):
+    class Meta:
+        model = ResourceOffer
+        fields = '__all__'
+
+
+class HomeNeedForm(ModelForm):
+    class Meta:
+        model = HomeNeed
+        fields = '__all__'
+
+
+class AllocationForm(ModelForm):
+    class Meta:
+        model = Allocation
         fields = '__all__'

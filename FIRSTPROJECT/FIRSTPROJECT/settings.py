@@ -11,19 +11,22 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-(amtx_j%idmpas7_6@quf0l*16vv40rj9aq=@3nxv%6d7holt#'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-homecarekenya-local-dev')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
 
 ALLOWED_HOSTS = ['*']
 
@@ -37,7 +40,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'firstApp'
+    'firstApp',
+    'communications',
 ]
 
 MIDDLEWARE = [
@@ -119,10 +123,15 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
-import os # Make sure this is imported at the top of your file
-
 # The URL prefix used to access these files in the browser
 MEDIA_URL = '/media/'
 
 # The actual folder on your computer where the files will live
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Africa's Talking settings
+AT_USERNAME = os.getenv('AT_USERNAME', 'sandbox')
+AT_API_KEY = os.getenv('AT_API_KEY', '')
+AT_SENDER_ID = os.getenv('AT_SENDER_ID', 'HomeCareKenya')
+AT_WEBHOOK_SECRET = os.getenv('AT_WEBHOOK_SECRET', '')
+AT_BASE_URL = os.getenv('AT_BASE_URL', 'https://api.sandbox.africastalking.com')
