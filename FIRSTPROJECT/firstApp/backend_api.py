@@ -5,7 +5,6 @@ from urllib.request import Request, urlopen
 
 from django.conf import settings
 
-
 API_TIMEOUT_SECONDS = 5
 
 
@@ -26,7 +25,13 @@ def get_json(path, params=None):
     try:
         with urlopen(request, timeout=API_TIMEOUT_SECONDS) as response:
             payload = json.loads(response.read().decode("utf-8"))
-    except (HTTPError, URLError, TimeoutError, UnicodeDecodeError, json.JSONDecodeError) as error:
+    except (
+        HTTPError,
+        URLError,
+        TimeoutError,
+        UnicodeDecodeError,
+        json.JSONDecodeError,
+    ) as error:
         raise BackendAPIError("The backend service could not be reached.") from error
 
     return payload

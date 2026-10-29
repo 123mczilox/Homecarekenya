@@ -10,28 +10,77 @@
         </div>
         <span class="demo-tag">Demonstration workspace</span>
     </div>
-    <div class="notice notice-warning"><i class="fa-solid fa-lock" aria-hidden="true"></i><span>This preview is not authenticated. Do not enter real organization needs or sensitive information.</span></div>
+    <div class="notice notice-warning"><i class="fa-solid fa-lock" aria-hidden="true"></i><span>This preview is not
+            authenticated. Do not enter real organization needs or sensitive information.</span></div>
     {% if submitted %}
-    <div class="notice notice-success"><i class="fa-solid fa-circle-check" aria-hidden="true"></i><div><b>Need preview created</b><span>No request was saved, verified or made visible to donors.</span></div></div>
+    <div class="notice notice-success"><i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+        <div><b>Need preview created</b><span>No request was saved, verified or made visible to donors.</span></div>
+    </div>
     {% endif %}
     <div class="needs-workspace">
         <form class="panel workflow-form" method="post" data-api-endpoint="/api/v1/needs/">
             {% csrf_token %}
-            <div class="panel-heading"><div><span class="small-label">New request</span><h2>Describe an outstanding need</h2></div><span class="panel-icon"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i></span></div>
+            <div class="panel-heading">
+                <div><span class="small-label">New request</span>
+                    <h2>Describe an outstanding need</h2>
+                </div><span class="panel-icon"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i></span>
+            </div>
             <label>Need title<input name="title" required placeholder="Specific item or resource"></label>
-            <div class="form-row"><label>Category<select name="category" required><option value="">Select category</option><option value="food">Food</option><option value="clothing">Clothing</option><option value="school_supplies">School supplies</option><option value="hygiene">Hygiene</option><option value="bedding">Bedding</option><option value="other">Other essential goods</option></select></label><label>Quantity requested<input type="number" name="quantity" min="1" required></label></div>
-            <div class="form-row"><label>Unit<input name="unit" required placeholder="items, kg, packs"></label><label>Urgency<select name="urgency" required><option value="">Select urgency</option><option value="1">1 · Routine</option><option value="2">2 · Soon</option><option value="3">3 · Important</option><option value="4">4 · High</option><option value="5">5 · Critical</option></select></label></div>
-            <div class="form-row"><label>Requested by<input type="date" name="deadline"></label><label>Storage capacity<select name="storage_capacity_available"><option value="true">Confirm available</option><option value="false">Not available</option></select></label></div>
-            <label>Reason for request<textarea name="reason" rows="3" required placeholder="Explain the current need"></textarea></label>
-            <button class="button" type="submit">Preview need <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+            <div class="form-row"><label>Category<select name="category" required>
+                        <option value="">Select category</option>
+                        <option value="food">Food</option>
+                        <option value="clothing">Clothing</option>
+                        <option value="school_supplies">School supplies</option>
+                        <option value="hygiene">Hygiene</option>
+                        <option value="bedding">Bedding</option>
+                        <option value="other">Other essential goods</option>
+                    </select></label><label>Quantity requested<input type="number" name="quantity" min="1"
+                        required></label></div>
+            <div class="form-row"><label>Unit<input name="unit" required
+                        placeholder="items, kg, packs"></label><label>Urgency<select name="urgency" required>
+                        <option value="">Select urgency</option>
+                        <option value="1">1 · Routine</option>
+                        <option value="2">2 · Soon</option>
+                        <option value="3">3 · Important</option>
+                        <option value="4">4 · High</option>
+                        <option value="5">5 · Critical</option>
+                    </select></label></div>
+            <div class="form-row"><label>Requested by<input type="date" name="deadline"></label><label>Storage
+                    capacity<select name="storage_capacity_available">
+                        <option value="true">Confirm available</option>
+                        <option value="false">Not available</option>
+                    </select></label></div>
+            <label>Reason for request<textarea name="reason" rows="3" required
+                    placeholder="Explain the current need"></textarea></label>
+            <button class="button" type="submit">Preview need <i class="fa-solid fa-arrow-right"
+                    aria-hidden="true"></i></button>
             <p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p>
-            <small class="form-footnote">A real workflow should verify requests and prevent reserved quantities from being allocated twice.</small>
+            <small class="form-footnote">A real workflow should verify requests and prevent reserved quantities from
+                being allocated twice.</small>
         </form>
         <section class="panel needs-list-panel">
-            <div class="panel-heading"><div><span class="small-label">Current requests</span><h2>Outstanding needs</h2></div><span class="demo-tag">Sample only</span></div>
-            <div class="need-row"><div><span class="status-pill status-open">Partially fulfilled</span><h3>Exercise books</h3><span class="small-label">School supplies · sample organization</span></div><div class="need-units"><b>56</b><span>of 120 remaining</span></div><div class="need-row-meta"><span>Urgency 4/5</span><span>Verification: sample</span></div></div>
-            <div class="need-row"><div><span class="status-pill status-review">Submitted</span><h3>Dry food staples</h3><span class="small-label">Food · sample organization</span></div><div class="need-units"><b>22</b><span>of 40 remaining</span></div><div class="need-row-meta"><span>Urgency 3/5</span><span>Verification: pending</span></div></div>
-            <div class="need-integrity"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Only verified, outstanding quantities should be considered by FairMatch. A pledge is not counted as fulfillment.</span></div>
+            <div class="panel-heading">
+                <div><span class="small-label">Current requests</span>
+                    <h2>Outstanding needs</h2>
+                </div><span class="demo-tag">Sample only</span>
+            </div>
+            <div class="need-row">
+                <div><span class="status-pill status-open">Partially fulfilled</span>
+                    <h3>Exercise books</h3><span class="small-label">School supplies · sample organization</span>
+                </div>
+                <div class="need-units"><b>56</b><span>of 120 remaining</span></div>
+                <div class="need-row-meta"><span>Urgency 4/5</span><span>Verification: sample</span></div>
+            </div>
+            <div class="need-row">
+                <div><span class="status-pill status-review">Submitted</span>
+                    <h3>Dry food staples</h3><span class="small-label">Food · sample organization</span>
+                </div>
+                <div class="need-units"><b>22</b><span>of 40 remaining</span></div>
+                <div class="need-row-meta"><span>Urgency 3/5</span><span>Verification: pending</span></div>
+            </div>
+            <div class="need-integrity"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Only verified,
+                    outstanding quantities should be considered by FairMatch. A pledge is not counted as
+                    fulfillment.</span></div>
         </section>
     </div>
 </section>

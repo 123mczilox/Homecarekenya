@@ -58,7 +58,9 @@ class HomeCarePrototypeTests(TestCase):
                 "is_verified": True,
             }
         ]
-        with patch("firstApp.views.get_public_homes", return_value=api_homes) as get_homes:
+        with patch(
+            "firstApp.views.get_public_homes", return_value=api_homes
+        ) as get_homes:
             response = self.client.get("/")
 
         self.assertContains(response, "Sample API Home")
@@ -73,13 +75,15 @@ class HomeCarePrototypeTests(TestCase):
             response = self.client.get("/")
 
         self.assertEqual(response.status_code, 503)
-        self.assertContains(response, "Service temporarily unavailable", status_code=503)
+        self.assertContains(
+            response, "Service temporarily unavailable", status_code=503
+        )
 
     def test_contribution_form_has_versioned_api_endpoint(self):
         response = self.client.get("/donations/")
 
         self.assertContains(response, 'data-api-endpoint="/api/v1/contributions/"')
-        self.assertContains(response, 'data-form-feedback')
+        self.assertContains(response, "data-form-feedback")
 
     def test_directory_filters_saved_homes(self):
         ChildrenHome.objects.create(

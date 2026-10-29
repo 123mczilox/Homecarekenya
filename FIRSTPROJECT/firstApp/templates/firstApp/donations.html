@@ -14,7 +14,8 @@
         <div><b>Contribution preview complete</b><span>Nothing was submitted, saved or charged. This prototype does not
                 process donations or payments.</span></div>
     </div>{% endif %}
-    <form class="panel workflow-form donation-form" method="post" data-api-endpoint="/api/v1/contributions/">{% csrf_token %}<fieldset>
+    <form class="panel workflow-form donation-form" method="post" data-api-endpoint="/api/v1/contributions/">{%
+        csrf_token %}<fieldset>
             <legend>What would you like to contribute?</legend>
             <div class="choice-grid"><label class="choice-card"><input type="radio" name="resource_type" value="money"
                         required><span><i class="fa-solid fa-coins" aria-hidden="true"></i><b>Money</b><small>Payment
@@ -42,8 +43,8 @@
                     placeholder="Name"></label><label>Email<input name="email" type="email" autocomplete="email"
                     placeholder="Email address"></label></div><label class="checkbox-label"><input type="checkbox"
                 required><span>I understand this is a demonstration only and does not create a pledge or
-                payment.</span></label><input type="hidden" name="demo_consent" value="true"><button class="button" type="submit">Preview contribution <i
-                class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+                payment.</span></label><input type="hidden" name="demo_consent" value="true"><button class="button"
+            type="submit">Preview contribution <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
         <p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p>
         <p class="form-footnote">No payment provider is connected. A contribution is never shown as received until
             delivery or payment is confirmed.</p>

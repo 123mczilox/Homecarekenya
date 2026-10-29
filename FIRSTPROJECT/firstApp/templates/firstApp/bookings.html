@@ -15,8 +15,8 @@
                 approved visit.</span></div>
     </div>{% endif %}
     <div class="booking-layout">
-        <form class="panel workflow-form" method="post" data-api-endpoint="/api/v1/visit-requests/">{% csrf_token %}<div class="form-row"><label>Organization<select
-                        name="home" required>
+        <form class="panel workflow-form" method="post" data-api-endpoint="/api/v1/visit-requests/">{% csrf_token %}<div
+                class="form-row"><label>Organization<select name="home" required>
                         <option value="">Choose a home</option>{% for home in homes %}<option value="{{ home.pk }}">{{
                             home.name }} · {{ home.location }}</option>{% endfor %}
                     </select></label><label>Proposed date<input name="date" type="date" required></label></div>
@@ -32,9 +32,10 @@
                     placeholder="Tell the organization what you hope to do"></textarea></label><label>Accessibility or
                 scheduling notes<textarea name="notes" rows="2"></textarea></label><label class="checkbox-label"><input
                     type="checkbox" required><span>I agree to follow the organization's visitor guidance and
-                        safeguarding requirements.</span></label><input type="hidden" name="visitor_conduct_accepted" value="true"><button class="button" type="submit">Preview visit request
+                    safeguarding requirements.</span></label><input type="hidden" name="visitor_conduct_accepted"
+                value="true"><button class="button" type="submit">Preview visit request
                 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
-                    <p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p>
+            <p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p>
         </form>
         <aside class="panel booking-guidance"><span class="panel-icon"><i class="fa-solid fa-shield-heart"
                     aria-hidden="true"></i></span>

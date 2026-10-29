@@ -32,7 +32,9 @@ if not SECRET_KEY:
 
 ALLOWED_HOSTS = [
     host.strip()
-    for host in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",")
+    for host in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(
+        ","
+    )
     if host.strip()
 ]
 if not DEBUG and not ALLOWED_HOSTS:
@@ -42,46 +44,46 @@ if not DEBUG and not ALLOWED_HOSTS:
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'firstApp'
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "firstApp",
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 if not DEBUG:
-    MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+    MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
 
-ROOT_URLCONF = 'FIRSTPROJECT.urls'
+ROOT_URLCONF = "FIRSTPROJECT.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-                'firstApp.context_processors.homecare_config',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                "firstApp.context_processors.homecare_config",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'FIRSTPROJECT.wsgi.application'
+WSGI_APPLICATION = "FIRSTPROJECT.wsgi.application"
 
 
 # Database
@@ -90,7 +92,10 @@ WSGI_APPLICATION = 'FIRSTPROJECT.wsgi.application'
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 if DATABASE_URL:
     database_url = urlsplit(DATABASE_URL)
-    if database_url.scheme not in {"postgres", "postgresql"} or not database_url.hostname:
+    if (
+        database_url.scheme not in {"postgres", "postgresql"}
+        or not database_url.hostname
+    ):
         raise ImproperlyConfigured("DATABASE_URL must be a PostgreSQL connection URL.")
     DATABASES = {
         "default": {
@@ -120,16 +125,16 @@ else:
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -137,9 +142,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -149,7 +154,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "static/"
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
@@ -169,7 +174,9 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 X_FRAME_OPTIONS = "DENY"
 SECURE_SSL_REDIRECT = not DEBUG
-SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "0")) if not DEBUG else 0
+SECURE_HSTS_SECONDS = (
+    int(os.environ.get("SECURE_HSTS_SECONDS", "0")) if not DEBUG else 0
+)
 SECURE_HSTS_INCLUDE_SUBDOMAINS = (
     os.environ.get("SECURE_HSTS_INCLUDE_SUBDOMAINS", "false").lower() == "true"
 )
@@ -185,27 +192,27 @@ CSRF_TRUSTED_ORIGINS = [
     if origin.strip()
 ]
 
-HOMECARE_API_BASE_URL = os.environ.get('HOMECARE_API_BASE_URL', '').rstrip('/')
+HOMECARE_API_BASE_URL = os.environ.get("HOMECARE_API_BASE_URL", "").rstrip("/")
 if HOMECARE_API_BASE_URL:
     api_origin = urlsplit(HOMECARE_API_BASE_URL)
-    is_local_api = api_origin.hostname in {'localhost', '127.0.0.1', '::1'}
-    is_secure_api = api_origin.scheme == 'https'
-    is_local_development_api = DEBUG and api_origin.scheme == 'http' and is_local_api
+    is_local_api = api_origin.hostname in {"localhost", "127.0.0.1", "::1"}
+    is_secure_api = api_origin.scheme == "https"
+    is_local_development_api = DEBUG and api_origin.scheme == "http" and is_local_api
     if (
         not api_origin.netloc
         or api_origin.username
         or api_origin.password
-        or api_origin.path not in {'', '/'}
+        or api_origin.path not in {"", "/"}
         or api_origin.query
         or api_origin.fragment
         or not (is_secure_api or is_local_development_api)
     ):
         raise ImproperlyConfigured(
-            'HOMECARE_API_BASE_URL must be an HTTPS origin (or a local HTTP origin in DEBUG).'
+            "HOMECARE_API_BASE_URL must be an HTTPS origin (or a local HTTP origin in DEBUG)."
         )
 
 # The URL prefix used to access these files in the browser
-MEDIA_URL = '/media/'
+MEDIA_URL = "/media/"
 
 # The actual folder on your computer where the files will live
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")

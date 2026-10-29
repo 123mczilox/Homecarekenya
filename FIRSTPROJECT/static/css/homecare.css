@@ -2020,16 +2020,19 @@ b {
     margin: 4px 0 0;
     font-size: 17px;
 }
+
 .needs-workspace {
     display: grid;
     grid-template-columns: .9fr 1.1fr;
     align-items: start;
     gap: 15px;
 }
+
 .needs-list-panel .panel-heading {
     align-items: center;
     margin-bottom: 12px;
 }
+
 .need-row {
     display: grid;
     grid-template-columns: 1fr auto;
@@ -2037,29 +2040,36 @@ b {
     padding: 16px 0;
     border-top: 1px solid var(--line);
 }
+
 .need-row h3 {
     margin: 7px 0 2px;
     font-size: 13px;
 }
+
 .need-units {
     display: grid;
     justify-items: end;
     align-content: center;
 }
+
 .need-units b {
     color: var(--green);
     font-size: 21px;
 }
-.need-units span, .need-row-meta {
+
+.need-units span,
+.need-row-meta {
     color: var(--muted);
     font-size: 9px;
 }
+
 .need-row-meta {
     grid-column: 1 / -1;
     display: flex;
     justify-content: space-between;
     gap: 10px;
 }
+
 .need-integrity {
     display: flex;
     gap: 9px;
@@ -2070,11 +2080,18 @@ b {
     font-size: 9px;
     line-height: 1.55;
 }
-.need-integrity i { margin-top: 2px; }
+
+.need-integrity i {
+    margin-top: 2px;
+}
 
 .panel-icon {
     width: 39px;
-    .needs-workspace { grid-template-columns: 1fr; }
+
+    .needs-workspace {
+        grid-template-columns: 1fr;
+    }
+
     height: 39px;
     flex: 0 0 auto;
     display: grid;
@@ -2330,22 +2347,42 @@ b {
     font-size: 9px;
     line-height: 1.6;
 }
+
 .form-feedback {
     min-height: 0;
     margin: 0;
     font-size: 11px;
     line-height: 1.5;
 }
+
 .form-feedback:not(:empty) {
     padding: 10px 12px;
     border: 1px solid var(--line);
     border-radius: 3px;
     background: #f7f9f7;
 }
-.form-feedback[data-state="pending"] { color: #705d37; background: #fbf7ed; }
-.form-feedback[data-state="success"] { color: var(--green-deep); border-color: #cfe2d2; background: var(--green-soft); }
-.form-feedback[data-state="error"] { color: #8d2929; border-color: #f0cccc; background: var(--red-soft); }
-.workflow-form button:disabled { cursor: wait; opacity: .65; }
+
+.form-feedback[data-state="pending"] {
+    color: #705d37;
+    background: #fbf7ed;
+}
+
+.form-feedback[data-state="success"] {
+    color: var(--green-deep);
+    border-color: #cfe2d2;
+    background: var(--green-soft);
+}
+
+.form-feedback[data-state="error"] {
+    color: #8d2929;
+    border-color: #f0cccc;
+    background: var(--red-soft);
+}
+
+.workflow-form button:disabled {
+    cursor: wait;
+    opacity: .65;
+}
 
 .vertical-flow {
     display: grid;

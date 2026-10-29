@@ -13,8 +13,9 @@
         <div><b>Registration preview complete</b><span>No information was stored or sent. Organization verification is
                 not available in this prototype.</span></div>
     </div>{% endif %}
-    <form class="panel workflow-form" method="post" data-api-endpoint="/api/v1/home-registrations/">{% csrf_token %}<div class="notice notice-warning"><i
-                class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Do not enter real personal or safeguarding
+    <form class="panel workflow-form" method="post" data-api-endpoint="/api/v1/home-registrations/">{% csrf_token %}<div
+            class="notice notice-warning"><i class="fa-solid fa-circle-info" aria-hidden="true"></i><span>Do not enter
+                real personal or safeguarding
                 information. This form is a stakeholder-review prototype only.</span></div><label>Organization
             name<input name="name" required placeholder="Registered organization name"></label>
         <div class="form-row"><label>County<select name="location" required>
@@ -23,10 +24,11 @@
                 </select></label><label>Organization email<input name="email" type="email" required
                     placeholder="Organization contact email"></label></div>
         <div class="form-row"><label>Public phone number<input name="phone_number" type="tel"
-                placeholder="Optional"></label><label>Website<input name="website_url" type="url"
+                    placeholder="Optional"></label><label>Website<input name="website_url" type="url"
                     placeholder="https://"></label></div><label>Organization overview<textarea name="description"
                 rows="4" required placeholder="Mission and community work"></textarea></label><label
-            class="checkbox-label"><input type="checkbox" name="verification_acknowledged" value="true" required><span>I understand submitting a registration does not
+            class="checkbox-label"><input type="checkbox" name="verification_acknowledged" value="true" required><span>I
+                understand submitting a registration does not
                 mean the organization is verified.</span></label><button class="button" type="submit">Preview
             registration <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
         <p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p>
