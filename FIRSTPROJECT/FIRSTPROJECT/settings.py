@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-(amtx_j%idmpas7_6@quf0l*16vv40rj9aq=@3nxv%6d7holt#
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -75,12 +75,8 @@ WSGI_APPLICATION = 'FIRSTPROJECT.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'homecare_db',
-        'USER': 'postgres',
-        'PASSWORD': '2727wanjohi',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
@@ -122,7 +118,6 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / "static",
-    "/var/www/static/",
 ]
 import os # Make sure this is imported at the top of your file
 
