@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from .backend_api import BackendAPIError
 from .models import (
+    BookingRequest,
     ChildrenHome,
     CommunityEvent,
     ContributionPledge,
@@ -363,6 +364,125 @@ class HomeCarePrototypeTests(TestCase):
         self.assertContains(response, upcoming.title)
         self.assertNotContains(response, "Unpublished event")
         self.assertNotContains(response, "Past event")
+
+    def test_ussd_home_menu_offers_events_visits_and_donations(self):
+        response = self.client.post("/communications/ussd/", {"text": ""})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.content.decode().startswith("CON "))
+        self.assertContains(response, "1. Upcoming events")
+        self.assertContains(response, "2. Book a visit")
+        self.assertContains(response, "3. Make a donation")
+
+    def test_ussd_lists_only_published_upcoming_events(self):
+        today = timezone.localdate(timezone=ZoneInfo("Africa/Nairobi"))
+        CommunityEvent.objects.create(
+            title="Upcoming public event",
+            details="A public event.",
+            event_date=today + timedelta(days=4),
+            location="Nairobi",
+            is_published=True,
+        )
+        CommunityEvent.objects.create(
+            title="Private unpublished event",
+            details="Not public.",
+            event_date=today + timedelta(days=5),
+            location="Nairobi",
+        )
+
+        response = self.client.post("/communications/ussd/", {"text": "1"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.content.decode().startswith("END "))
+        self.assertContains(response, "Upcoming public event")
+        self.assertNotContains(response, "Private unpublished event")
+
+    @patch("communications.views.send_sms", return_value={"status": "sent"})
+    def test_ussd_books_verified_home_and_notifies_home(self, mock_send_sms):
+        home = ChildrenHome.objects.create(
+            name="Sample USSD Home",
+            slug="sample-ussd-home",
+            location="Nairobi",
+            capacity=20,
+            descripttion="A verified home for USSD tests.",
+            image="",
+            phone_number="+254700000002",
+            email="ussd-home@example.test",
+            is_verified=True,
+        )
+        text = (
+            "2*1*Jane Doe*2026-12-01*10:00 am*jane@example.test"
+            "*2*Meet the organization*1"
+        )
+
+        response = self.client.post(
+            "/communications/ussd/",
+            {"text": text, "phoneNumber": "254700000001"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.content.decode().startswith("END "))
+        self.assertContains(response, "Visit request saved for review")
+        booking = BookingRequest.objects.get()
+        self.assertEqual(booking.home, home)
+        self.assertEqual(booking.visitor_name, "Jane Doe")
+        self.assertEqual(booking.phone_number, "+254700000001")
+        self.assertTrue(booking.visitor_conduct_accepted)
+        mock_send_sms.assert_called_once()
+        self.assertEqual(mock_send_sms.call_args.args[0], ["+254700000002"])
+
+    @patch.dict("os.environ", {"COORDINATOR_PHONE": "+254700000002"})
+    @patch("communications.views.send_sms", return_value={"status": "sent"})
+    def test_ussd_records_donation_pledge_and_sends_sms_with_opt_in(
+        self, mock_send_sms
+    ):
+        text = (
+            "3*1*School supplies*10 boxes*Jane Doe*jane@example.test*1*1"
+        )
+
+        response = self.client.post(
+            "/communications/ussd/",
+            {"text": text, "phoneNumber": "+254700000001"},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.content.decode().startswith("END "))
+        self.assertContains(response, "Pledge saved for coordinator review")
+        pledge = ContributionPledge.objects.get()
+        self.assertEqual(pledge.resource_type, "money")
+        self.assertEqual(pledge.description, "School supplies")
+        self.assertEqual(pledge.phone_number, "+254700000001")
+        self.assertTrue(pledge.sms_consent)
+        self.assertEqual(mock_send_sms.call_count, 2)
+
+    def test_ussd_donation_requires_final_confirmation(self):
+        response = self.client.post(
+            "/communications/ussd/",
+            {
+                "text": "3*2*Rice*10 bags*Jane Doe*jane@example.test*2*0",
+                "phoneNumber": "+254700000001",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Donation pledge cancelled")
+        self.assertFalse(ContributionPledge.objects.exists())
+
+    def test_ussd_invalid_booking_consent_does_not_save_request(self):
+        response = self.client.post(
+            "/communications/ussd/",
+            {
+                "text": (
+                    "2*1*Jane Doe*2026-12-01*10:00 am*jane@example.test"
+                    "*2*Meet the organization*maybe"
+                ),
+                "phoneNumber": "+254700000001",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.content.decode().startswith("END "))
+        self.assertFalse(BookingRequest.objects.exists())
 
     @patch(
         "firstApp.management.commands.send_event_reminders.send_event_sms",

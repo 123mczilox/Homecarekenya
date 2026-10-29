@@ -91,6 +91,7 @@ class BookingRequest(models.Model):
     time = models.CharField(max_length=40)
     visitor_count = models.PositiveIntegerField(default=1)
     visitor_name = models.CharField(max_length=150)
+    phone_number = models.CharField(max_length=16, blank=True)
     email = models.EmailField()
     purpose = models.TextField()
     notes = models.TextField(blank=True, default='')

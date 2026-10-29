@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import Iterable
 
 import africastalking
 
@@ -90,32 +89,3 @@ def send_donation_sms(recipients, donation_message: str) -> dict:
 def send_general_announcement(recipients, announcement: str) -> dict:
     message = f"HomeCare Kenya: {announcement}"
     return send_sms(recipients, message)
-
-
-def build_ussd_response(text: str | None, phone_number: str | None = None) -> str:
-    """Return a proper Africa's Talking USSD response string.
-
-    The format must be one of:
-    - CON ... for continued session
-    - END ... for terminal session
-    """
-    cleaned = (text or '').strip()
-    if not cleaned or cleaned == '':
-        return (
-            'CON Welcome to HomeCare Kenya.\n'
-            '1. Request support\n'
-            '2. Donate\n'
-            '3. Check status\n'
-            '0. Exit'
-        )
-
-    last_input = cleaned.split('*')[-1]
-    if last_input == '1':
-        return 'CON Please enter your home name or your contact name and we will route your request.'
-    if last_input == '2':
-        return 'CON To donate, reply with the item and quantity. Example: rice 20kg'
-    if last_input == '3':
-        return 'CON Your request is being reviewed. A team member will contact you soon.'
-    if last_input == '0':
-        return 'END Thank you for contacting HomeCare Kenya.'
-    return 'CON Invalid option. Please choose 1, 2, 3 or 0.'

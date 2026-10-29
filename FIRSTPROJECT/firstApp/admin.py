@@ -19,9 +19,9 @@ from .models import (
 
 @admin.register(BookingRequest)
 class BookingRequestAdmin(admin.ModelAdmin):
-    list_display = ('visitor_name', 'home', 'date', 'status', 'created_at')
+    list_display = ('visitor_name', 'phone_number', 'home', 'date', 'status', 'created_at')
     list_filter = ('status', 'date')
-    search_fields = ('visitor_name', 'email', 'home__name')
+    search_fields = ('visitor_name', 'phone_number', 'email', 'home__name')
     readonly_fields = ('created_at', 'updated_at')
 
 

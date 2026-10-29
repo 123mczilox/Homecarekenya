@@ -100,6 +100,20 @@ Keep `COORDINATOR_PHONE` and Africa's Talking credentials private; do not put th
 code. If `HOMECARE_API_BASE_URL` points to a separate API, that service must also store the new pledge phone/consent
 fields and trigger pledge SMS itself; Django does not receive writes sent directly to that API.
 
+## Africa's Talking USSD
+
+Set the Africa's Talking USSD callback URL to
+`https://homecarekenya.onrender.com/communications/ussd/`. The callback menu supports:
+
+- Upcoming published events (up to two are shown).
+- Visit requests to one of the first three verified homes. The caller provides their name, date, time, email,
+  visitor count, purpose and explicit agreement to visitor rules. Requests are saved as pending review, not confirmed.
+- Donation pledges for money, food or supplies. The caller confirms the pledge; no payment is processed. Coordinator
+  and donor SMS notifications follow the same `COORDINATOR_PHONE` and donor opt-in rules as website pledges.
+
+USSD visit and donation requests use the caller's phone number supplied by Africa's Talking. Apply migration
+`0010_bookingrequest_phone_number` before using the updated callback.
+
 ## Production responsibilities
 
 - Authenticate users and enforce organization, supplier, coordinator and administrator permissions on protected
