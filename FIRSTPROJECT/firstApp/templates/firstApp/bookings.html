@@ -15,7 +15,7 @@
                 approved visit.</span></div>
     </div>{% endif %}
     <div class="booking-layout">
-        <form class="panel workflow-form" method="post" data-api-endpoint="/api/v1/visit-requests/">{% csrf_token %}<div
+        <form class="panel workflow-form" method="post" data-api-endpoint="/api/v1/visit-requests/" action="">{% csrf_token %}<div
                 class="form-row"><label>Organization<select name="home" required>
                         <option value="">Choose a home</option>{% for home in homes %}<option value="{{ home.pk }}">{{
                             home.name }} · {{ home.location }}</option>{% endfor %}

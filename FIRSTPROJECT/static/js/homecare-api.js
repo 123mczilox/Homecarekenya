@@ -44,6 +44,12 @@
                 const result = await response.json().catch(() => ({}));
 
                 if (!response.ok) {
+                    const isLocalFallback = [404, 405].includes(response.status);
+                    if (isLocalFallback) {
+                        form.submit();
+                        return;
+                    }
+
                     const validationText = result.errors
                         ? Object.values(result.errors).flat().join(" ")
                         : result.detail || result.message;

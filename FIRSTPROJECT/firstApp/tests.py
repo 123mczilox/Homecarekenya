@@ -142,3 +142,52 @@ class HomeCarePrototypeTests(TestCase):
         response = self.client.post("/donations/", {"resource_type": "money"})
 
         self.assertContains(response, "Nothing was submitted, saved or charged")
+
+    def test_booking_form_saves_to_backend(self):
+        home = ChildrenHome.objects.create(
+            name="Sample Visit Home",
+            slug="sample-visit-home",
+            location="Nairobi",
+            capacity=25,
+            descripttion="A sample home for booking tests.",
+            image="",
+            email="visit@example.test",
+            is_verified=True,
+        )
+
+        response = self.client.post(
+            "/bookings/",
+            {
+                "home": str(home.pk),
+                "date": "2026-12-01",
+                "time": "morning",
+                "visitor_count": "2",
+                "visitor_name": "Jane Doe",
+                "email": "jane@example.test",
+                "purpose": "Meet the team and review programs.",
+                "notes": "Please share a safety briefing.",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Request preview created")
+        self.assertTrue(home.booking_requests.exists())
+
+    def test_foodbridge_form_saves_to_backend(self):
+        response = self.client.post(
+            "/foodbridge/",
+            {
+                "food_name": "Fresh produce boxes",
+                "category": "fresh_produce",
+                "quantity": "18",
+                "unit": "boxes",
+                "location": "Nairobi central",
+                "collection_window": "Tuesday 10:00-12:00",
+                "expiry_date": "2026-11-20",
+                "handling": "Keep chilled until collection.",
+                "food_safety_confirmed": "true",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Preview only")

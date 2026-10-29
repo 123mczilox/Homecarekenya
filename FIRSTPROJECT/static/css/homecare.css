@@ -21,14 +21,27 @@
 
 html {
     scroll-behavior: smooth;
+    font-size: 16px;
 }
 
 body {
     margin: 0;
     background: var(--paper);
     color: var(--ink);
-    font-size: 15px;
-    line-height: 1.6;
+    font-size: 1rem;
+    line-height: 1.7;
+}
+
+p,
+li,
+label,
+input,
+select,
+textarea,
+small,
+button,
+a {
+    font-size: inherit;
 }
 
 main {
@@ -84,6 +97,37 @@ b {
 .section-shell {
     width: min(var(--content-width), calc(100% - 48px));
     margin-inline: auto;
+    font-size: 1rem;
+}
+
+.prototype-page {
+    font-size: 1rem;
+}
+
+.page-intro-row {
+    align-items: end;
+}
+
+.page-intro-row p:not(.eyebrow) {
+    font-size: 1rem;
+    line-height: 1.75;
+}
+
+.workflow-form label,
+.workflow-form input:not([type=checkbox]):not([type=radio]),
+.workflow-form select,
+.workflow-form textarea,
+.form-footnote,
+.form-feedback {
+    font-size: 0.96rem;
+}
+
+.workflow-form textarea {
+    font-size: 0.95rem;
+}
+
+.workflow-form .checkbox-label span {
+    font-size: 0.95rem;
 }
 
 .site-header {

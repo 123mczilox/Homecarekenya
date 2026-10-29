@@ -1,6 +1,16 @@
 from django.forms import ModelForm
 
-from .models import Allocation, ChildrenHome, Donor, HomeNeed, Hobby, ResourceOffer, Student
+from .models import (
+    Allocation,
+    BookingRequest,
+    ChildrenHome,
+    Donor,
+    FoodBridgeListing,
+    HomeNeed,
+    Hobby,
+    ResourceOffer,
+    Student,
+)
 
 
 class StudentForm(ModelForm):
@@ -37,6 +47,37 @@ class HomeNeedForm(ModelForm):
     class Meta:
         model = HomeNeed
         fields = '__all__'
+
+
+class BookingRequestForm(ModelForm):
+    class Meta:
+        model = BookingRequest
+        fields = [
+            'home',
+            'date',
+            'time',
+            'visitor_count',
+            'visitor_name',
+            'email',
+            'purpose',
+            'notes',
+        ]
+
+
+class FoodBridgeListingForm(ModelForm):
+    class Meta:
+        model = FoodBridgeListing
+        fields = [
+            'food_name',
+            'category',
+            'quantity',
+            'unit',
+            'location',
+            'collection_window',
+            'expiry_date',
+            'handling',
+            'food_safety_confirmed',
+        ]
 
 
 class AllocationForm(ModelForm):

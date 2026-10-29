@@ -71,6 +71,46 @@ class ResourceOffer(models.Model):
         return f'{self.resource_type} ({self.quantity_available} {self.unit})'
 
 
+class BookingRequest(models.Model):
+    home = models.ForeignKey(ChildrenHome, on_delete=models.CASCADE, related_name='booking_requests')
+    date = models.DateField()
+    time = models.CharField(max_length=40)
+    visitor_count = models.PositiveIntegerField(default=1)
+    visitor_name = models.CharField(max_length=150)
+    email = models.EmailField()
+    purpose = models.TextField()
+    notes = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.visitor_name} for {self.home.name} on {self.date}'
+
+
+class FoodBridgeListing(models.Model):
+    CATEGORY_CHOICES = [
+        ('fresh_produce', 'Fresh produce'),
+        ('dry_goods', 'Dry goods'),
+        ('dairy', 'Dairy'),
+        ('prepared_food', 'Prepared food'),
+        ('other', 'Other'),
+    ]
+    food_name = models.CharField(max_length=200)
+    category = models.CharField(max_length=30, choices=CATEGORY_CHOICES)
+    quantity = models.PositiveIntegerField()
+    unit = models.CharField(max_length=30)
+    location = models.CharField(max_length=200)
+    collection_window = models.CharField(max_length=200)
+    expiry_date = models.DateField()
+    handling = models.TextField(blank=True, default='')
+    food_safety_confirmed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.food_name} ({self.quantity} {self.unit})'
+
+
 class HomeNeed(models.Model):
     VERIFICATION_CHOICES = [
         ('verified', 'Verified'),

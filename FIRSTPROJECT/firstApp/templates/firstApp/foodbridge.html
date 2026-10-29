@@ -23,8 +23,7 @@
             <div class="notice notice-warning"><i class="fa-solid fa-triangle-exclamation"
                     aria-hidden="true"></i><span>Only food that is safe, in suitable condition and within its use-by
                     date can be offered. Never list expired or unsafe food.</span></div>
-            <form method="post" class="workflow-form" data-api-endpoint="/api/v1/food-offers/">{% csrf_token
-                %}<label>Food name<input name="food_name" required placeholder="e.g. Fresh produce boxes"></label>
+            <form method="post" class="workflow-form" data-api-endpoint="/api/v1/food-offers/" action="">{% csrf_token %}<label>Food name<input name="food_name" required placeholder="e.g. Fresh produce boxes"></label>
                 <div class="form-row"><label>Category<select name="category" required>
                             <option value="">Choose category</option>
                             <option value="fresh_produce">Fresh produce</option>
