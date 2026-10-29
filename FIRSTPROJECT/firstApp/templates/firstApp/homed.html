@@ -1,7 +1,61 @@
-{% extends 'base.html'%}
-{%load static%}
+{% extends 'base.html' %}
+{% block title %}Home Dashboard | HomeCare Kenya{% endblock %}
 {% block content %}
-
-    <h1>home dashboard</h1>
-    <img src="{% static '/svgs/undraw_marketing-analysis_2u5r.svg' %}" alt="home dashboard" class="img-fluid rounded-3 height-600 width-800" >
+<section class="dashboard-page">
+    <aside class="dashboard-sidebar"><a class="dashboard-brand" href="{% url 'home' %}"><span class="brand-mark"><i
+                    class="fa-solid fa-house" aria-hidden="true"></i></span><b>Home workspace</b></a><span
+            class="sidebar-label">ORGANIZATION</span><a class="sidebar-link sidebar-active" href="{% url 'homed' %}"><i
+                class="fa-solid fa-chart-line" aria-hidden="true"></i> Overview</a><a class="sidebar-link"
+            href="{% url 'find_homes' %}"><i class="fa-regular fa-building" aria-hidden="true"></i> Profile</a><a
+            class="sidebar-link" href="{% url 'needs-management' %}"><i class="fa-solid fa-list-check"
+                aria-hidden="true"></i> Needs</a><a class="sidebar-link" href="{% url 'fairmatch' %}"><i class="fa-solid fa-scale-balanced"
+                aria-hidden="true"></i> FairMatch</a><a class="sidebar-link" href="{% url 'foodbridge' %}"><i
+                class="fa-solid fa-carrot" aria-hidden="true"></i> FoodBridge</a><a class="sidebar-link"
+            href="{% url 'Bookings' %}"><i class="fa-regular fa-calendar" aria-hidden="true"></i> Visits</a><a
+            class="sidebar-link" href="{% url 'events' %}"><i class="fa-solid fa-people-group" aria-hidden="true"></i>
+            Community events</a>
+        <div class="sidebar-bottom"><a class="sidebar-link" href="{% url 'home-register' %}"><i
+                    class="fa-solid fa-circle-plus" aria-hidden="true"></i> Register organization</a><a
+                class="sidebar-link" href="{% url 'home' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                Public website</a></div>
+    </aside>
+    <div class="dashboard-main">
+        <div class="dashboard-topline">
+            <div>
+                <p class="eyebrow">Organization workspace</p>
+                <h1>Good morning.</h1>
+            </div><span class="demo-tag">Demonstration dashboard</span>
+        </div>
+        <div class="notice notice-warning"><i class="fa-solid fa-lock" aria-hidden="true"></i><span>This demo is not
+                access-controlled. Do not enter real organization, donor or child information.</span></div>
+        <div class="dashboard-metrics">
+            <article><span>Outstanding needs</span><b>—</b><small>No live needs connected</small></article>
+            <article><span>Awaiting collection</span><b>—</b><small>No live donations connected</small></article>
+            <article><span>Upcoming visits</span><b>—</b><small>No live bookings connected</small></article>
+            <article><span>Inventory alerts</span><b>—</b><small>Inventory module not connected</small></article>
+        </div>
+        <div class="dashboard-columns">
+            <section class="panel">
+                <div class="panel-heading">
+                    <div><span class="small-label">Your next steps</span>
+                        <h2>Keep your organization profile current</h2>
+                    </div><span class="panel-icon"><i class="fa-solid fa-list-check" aria-hidden="true"></i></span>
+                </div>
+                <div class="task-list"><a href="{% url 'home-register' %}"><span>01</span><b>Submit organization
+                            details</b><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a><a
+                        href="{% url 'fairmatch' %}"><span>02</span><b>Review how FairMatch works</b><i
+                            class="fa-solid fa-arrow-right" aria-hidden="true"></i></a><a
+                        href="{% url 'foodbridge' %}"><span>03</span><b>Check FoodBridge eligibility</b><i
+                            class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div>
+            </section>
+            <section class="panel privacy-panel"><span class="panel-icon"><i class="fa-solid fa-shield-halved"
+                        aria-hidden="true"></i></span>
+                <h2>Children's records are not available here.</h2>
+                <p>Private records require a separate, authenticated and audited staff system. The demo does not collect
+                    or display children's data.</p><a class="text-link" href="{% url 'home' %}">Safeguarding overview <i
+                        class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+            </section>
+        </div>
+    </div>
+</section>
 {% endblock %}

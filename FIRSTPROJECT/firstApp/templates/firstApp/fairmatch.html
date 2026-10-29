@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}FairMatch | HomeCare Kenya{% endblock %}
+{% block content %}
+<section class="prototype-page section-shell">
+    <div class="page-intro-row">
+        <div>
+            <p class="eyebrow">Transparent resource allocation</p>
+            <h1>FairMatch</h1>
+            <p>Recommendations based on documented need, suitability and delivery feasibility, with each factor visible.
+            </p>
+        </div><span class="demo-tag"><i class="fa-solid fa-flask" aria-hidden="true"></i> Demonstration data</span>
+    </div>
+    <div class="workflow-ribbon"><span>Available resource</span><i class="fa-solid fa-arrow-right"
+            aria-hidden="true"></i><span>Eligibility checks</span><i class="fa-solid fa-arrow-right"
+            aria-hidden="true"></i><span class="ribbon-active">FairMatch recommendation</span><i
+            class="fa-solid fa-arrow-right" aria-hidden="true"></i><span>Coordinator review</span><i
+            class="fa-solid fa-arrow-right" aria-hidden="true"></i><span>Confirmed receipt</span></div>
+    <div class="fairmatch-layout">
+        <div class="panel match-panel">
+            <div class="panel-heading">
+                <div><span class="small-label">Suggested match · sample only</span>
+                    <h2>Exercise books → Tumaini Learning Centre</h2>
+                </div><span class="status-pill status-review">Review required</span>
+            </div>
+            <div class="match-quantities">
+                <div><span>Available resource</span><b>{{ sample_offer.quantity_available }}
+                        books</b><small>Demonstration offer</small></div>
+                <div><span>Outstanding need</span><b>56 books</b><small>120 requested · 64 fulfilled in sample</small>
+                </div>
+                <div><span>Recommended quantity</span>
+                    <b>{{ recommendation.recommended_quantity }} books</b>
+                    <small>Cannot exceed supply or outstanding need</small>
+                </div>
+            </div>
+            <div class="score-heading">
+                <div><span class="small-label">Explainable priority score</span>
+                    <strong>{{ recommendation.priority_score }}<small>/100</small></strong>
+                </div><span class="status-pill status-open">Eligible in sample</span>
+            </div>
+            <div class="factor-list">
+                <div class="factor-row"><span>Urgency <b>40%</b></span>
+                    <div class="factor-track"><span style="width:{{ recommendation.components.urgency_score }}%"></span>
+                    </div>
+                    <strong>{{ recommendation.components.urgency_score }}</strong>
+                </div>
+                <div class="factor-row"><span>Unmet need <b>30%</b></span>
+                    <div class="factor-track"><span
+                            style="width:{{ recommendation.components.unmet_need_score }}%"></span></div>
+                    <strong>{{ recommendation.components.unmet_need_score }}</strong>
+                </div>
+                <div class="factor-row"><span>Delivery feasibility <b>20%</b></span>
+                    <div class="factor-track"><span
+                            style="width:{{ recommendation.components.delivery_feasibility_score }}%"></span></div>
+                    <strong>{{ recommendation.components.delivery_feasibility_score }}</strong>
+                </div>
+                <div class="factor-row"><span>Allocation equity <b>10%</b></span>
+                    <div class="factor-track"><span
+                            style="width:{{ recommendation.components.allocation_equity_score }}%"></span></div>
+                    <strong>{{ recommendation.components.allocation_equity_score }}</strong>
+                </div>
+            </div>
+            <div class="match-explanation"><i class="fa-regular fa-lightbulb" aria-hidden="true"></i>
+                <p>In this demonstration, the request is marked verified, has remaining quantity, compatible units,
+                    storage capacity and feasible delivery. The recommendation is not an allocation until an authorized
+                    coordinator approves it.</p>
+            </div><button class="button" type="button" disabled aria-disabled="true">Coordinator approval unavailable in
+                demo</button>
+        </div>
+        <aside class="panel match-side">
+            <p class="eyebrow">What influences a match</p>
+            <h2>Fair by design.<br>Reviewable by people.</h2>
+            <p>Popularity, social following and children's personal characteristics are not allocation criteria.</p>
+            <ul class="check-list">
+                <li><i class="fa-solid fa-check" aria-hidden="true"></i> Verified, outstanding request</li>
+                <li><i class="fa-solid fa-check" aria-hidden="true"></i> Resource and unit compatibility</li>
+                <li><i class="fa-solid fa-check" aria-hidden="true"></i> Storage and delivery checks</li>
+                <li><i class="fa-solid fa-check" aria-hidden="true"></i> Previous allocation history</li>
+            </ul>
+            <div class="weights-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> These weights are
+                starting assumptions, not scientifically proven optimal values. Overrides should record a reason.</div>
+        </aside>
+    </div>
+</section>
+{% endblock %}

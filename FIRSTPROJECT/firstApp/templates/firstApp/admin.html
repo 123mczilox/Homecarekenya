@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Platform Overview | HomeCare Kenya{% endblock %}
+{% block content %}
+<section class="dashboard-page">
+    <aside class="dashboard-sidebar"><a class="dashboard-brand" href="{% url 'home' %}"><span class="brand-mark"><i
+                    class="fa-solid fa-hands-holding-child" aria-hidden="true"></i></span><b>Platform admin</b></a><span
+            class="sidebar-label">OPERATIONS</span><a class="sidebar-link sidebar-active"
+            href="{% url 'admin-dashboard' %}"><i class="fa-solid fa-chart-line" aria-hidden="true"></i> Overview</a><a
+            class="sidebar-link" href="{% url 'find_homes' %}"><i class="fa-regular fa-building" aria-hidden="true"></i>
+            Organizations</a><a class="sidebar-link" href="{% url 'fairmatch' %}"><i class="fa-solid fa-scale-balanced"
+                aria-hidden="true"></i> Allocations</a><a class="sidebar-link" href="{% url 'foodbridge' %}"><i
+                class="fa-solid fa-carrot" aria-hidden="true"></i> FoodBridge</a><a class="sidebar-link"
+            href="{% url 'events' %}"><i class="fa-regular fa-flag" aria-hidden="true"></i> Moderation</a>
+        <div class="sidebar-bottom"><a class="sidebar-link" href="{% url 'home' %}"><i class="fa-solid fa-arrow-left"
+                    aria-hidden="true"></i> Public website</a></div>
+    </aside>
+    <div class="dashboard-main">
+        <div class="dashboard-topline">
+            <div>
+                <p class="eyebrow">Platform operations</p>
+                <h1>Overview</h1>
+            </div><span class="demo-tag">Demonstration data</span>
+        </div>
+        <div class="notice notice-warning"><i class="fa-solid fa-lock" aria-hidden="true"></i><span>Administrative
+                controls are not authenticated or connected to live records in this prototype.</span></div>
+        <div class="dashboard-metrics">
+            <article><span>Registered organizations</span><b>—</b><small>Live count not available</small></article>
+            <article><span>Verification reviews</span><b>—</b><small>Queue not connected</small></article>
+            <article><span>Pending allocations</span><b>—</b><small>No live allocation records</small></article>
+            <article><span>Confirmed deliveries</span><b>—</b><small>Impact data not available</small></article>
+        </div>
+        <div class="dashboard-columns">
+            <section class="panel">
+                <div class="panel-heading">
+                    <div><span class="small-label">Review queue</span>
+                        <h2>Items requiring attention</h2>
+                    </div><span class="status-pill status-review">No live queue</span>
+                </div>
+                <div class="admin-queue-empty"><i class="fa-regular fa-clipboard" aria-hidden="true"></i>
+                    <p>Verification requests, delivery disputes and moderation reports will appear here when the
+                        corresponding workflows are connected.</p>
+                </div>
+            </section>
+            <section class="panel"><span class="small-label">Distribution principles</span>
+                <h2>Decisions that can be reviewed</h2>
+                <p>Allocation history should show eligibility checks, score factors, approved quantities, overrides and
+                    recorded reasons.</p><a class="text-link" href="{% url 'fairmatch' %}">Review FairMatch model <i
+                        class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+            </section>
+        </div>
+        <div class="panel audit-note"><i class="fa-solid fa-user-shield" aria-hidden="true"></i>
+            <div><b>Sensitive records require explicit authorization.</b>
+                <p>Child records and personal data are intentionally excluded from this dashboard prototype.</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

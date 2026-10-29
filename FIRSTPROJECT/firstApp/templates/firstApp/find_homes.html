@@ -1,210 +1,72 @@
 {% extends 'base.html' %}
-
-
+{% load static %}
+{% block title %}Children's Homes Directory | HomeCare Kenya{% endblock %}
 {% block content %}
-<style>
-    /* General Layout */
-.dashboard-layout {
-    display: flex;
-    background-color: #f8f9fa;
-    font-family: sans-serif;
-}
-.sidebar {
-    width: 250px;
-    padding: 20px;
-    background: white;
-    border-right: 1px solid #eee;
-}
-.main-content {
-    flex: 1;
-    padding: 30px;
-}
-
-/* Search Hero */
-.search-hero {
-    background-color: #0b7a3e; /* The Kenyan Green from your design */
-    color: white;
-    padding: 40px;
-    border-radius: 12px;
-    margin-bottom: 30px;
-}
-.search-box {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-}
-.search-box input, .search-box select {
-    padding: 12px;
-    border-radius: 6px;
-    border: none;
-}
-.search-box input { flex: 1; }
-
-/* The Grid */
-.homes-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 25px;
-}
-
-/* The Card */
-.home-card {
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-}
-.card-image-wrapper {
-    position: relative;
-    height: 180px;
-}
-.card-image-wrapper img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-/* Badges */
-.badge {
-    position: absolute;
-    top: 10px;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: bold;
-}
-.badge.critical {
-    left: 10px;
-    background: #ffebee;
-    color: #c62828;
-}
-.badge.verified {
-    right: 10px;
-    background: white;
-    color: #2e7d32;
-}
-
-/* Card Content */
-.card-info { padding: 20px; }
-.card-info h3 { margin: 0 0 5px 0; font-size: 18px; }
-.location-text { color: #666; font-size: 14px; margin-bottom: 15px; }
-
-.stats-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 13px;
-    color: #555;
-    margin-bottom: 15px;
-}
-
-/* Needs Box */
-.urgent-needs-box {
-    background: #fafafa;
-    padding: 10px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
-.needs-title { color: #c62828; font-size: 13px; font-weight: bold; margin: 0 0 8px 0; }
-.tag {
-    background: white;
-    border: 1px solid #ddd;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    color: #333;
-}
-
-/* Buttons */
-.card-buttons {
-    display: flex;
-    gap: 10px;
-}
-.btn-outline, .btn-solid {
-    flex: 1;
-    padding: 10px;
-    border-radius: 6px;
-    font-weight: bold;
-    cursor: pointer;
-    text-align: center;
-}
-.btn-outline {
-    background: white;
-    border: 1px solid #0b7a3e;
-    color: #0b7a3e;
-}
-.btn-solid {
-    background: #b71c1c; /* The red donate color */
-    border: none;
-    color: white;
-}
-</style>
-
-<div class="dashboard-layout">
-    
-    <aside class="sidebar">
-        <h3>Filter Homes</h3>
-        <p>Location Filters Coming Soon...</p>
+<section class="directory-page section-shell">
+    <div class="directory-heading">
+        <div>
+            <p class="eyebrow">A network across Kenya</p>
+            <h1>Discover children's homes.</h1>
+            <p>Explore registered organizations, understand how they work, and find considered ways to support them.</p>
+        </div>
+        <span class="directory-note"><i class="fa-solid fa-shield-heart" aria-hidden="true"></i> General locations only,
+            for safeguarding</span>
+    </div>
+    <form class="directory-filters" method="get" action="{% url 'find_homes' %}">
+        <label><span>Search by name</span><input type="search" name="q" value="{{ query }}"
+                placeholder="Organization name or county"></label>
+        <label><span>County</span><select name="county">
+                <option value="">All counties</option>
+                {% for value, label in counties %}
+                <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select></label>
+        <label><span>Registration status</span><select name="verification">
+                <option value="">All listings</option>
+                <option value="verified">Verified</option>
+                <option value="listed">Registration listed</option>
+            </select></label>
+        <button class="button" type="submit"><i class="fa-solid fa-sliders" aria-hidden="true"></i> Apply
+            filters</button>
+    </form>
+    <div class="directory-results-bar"><strong>{{ homes|length }} organization{{ homes|length|pluralize }}
+            listed</strong><span>Verification is reviewed separately from registration.</span></div>
+    <div class="directory-grid">
+        {% for home in homes %}
+        <article class="directory-card">
+            <div class="directory-photo">
+                <img src="{% static 'images/pexels-mwauraken-29079409.jpg' %}" alt="Illustrative community photo">
+                <span class="demo-tag image-demo-tag">Illustrative photo</span>
+                {% if home.is_verified %}
+                <span class="verified-label"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Verified</span>
+                {% else %}
+                <span class="unverified-label">Registration listed</span>
+                {% endif %}
+            </div>
+            <div class="directory-card-content"><span class="small-label"><i class="fa-solid fa-location-dot"
+                        aria-hidden="true"></i> {{ home.location }} County</span>
+                <h2>{{ home.name }}</h2>
+                <p>{{ home.descripttion|truncatewords:23 }}</p>
+                <div class="directory-card-actions"><a class="text-link" href="{% url 'home-profile' home.slug %}">View
+                        profile <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a><a
+                        class="button button-small" href="{% url 'Donations' %}">Support</a></div>
+            </div>
+        </article>
+        {% empty %}
+        <div class="directory-empty"><span><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i></span>
+            <h2>No organizations match those filters.</h2>
+            <p>Try a different county or search term. Registered homes appear here after their organization profile is
+                submitted.</p><a class="text-link" href="{% url 'find_homes' %}">Clear filters <i
+                    class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+        </div>
+        {% endfor %}
+    </div>
+    <aside class="map-disclosure"><span><i class="fa-regular fa-map" aria-hidden="true"></i></span>
+        <div><strong>Location privacy comes first</strong>
+            <p>Home records currently provide county-level locations only. This prototype does not place homes on a map
+                or invent coordinates.</p>
+        </div><a href="{% url 'find_homes' %}">Use accessible list <i class="fa-solid fa-arrow-right"
+                aria-hidden="true"></i></a>
     </aside>
-
-    <main class="main-content container ">
-        
-        <div class="search-hero bg success">
-            <h1 class="dispalay-5 font-weight-bold">Children's Homes Directory</h1>
-            <p>Connect with registered children's homes across Kenya</p>
-            <div class="search-box">
-                <input type="text" placeholder="Search by name or location...">
-                <select>
-                    <option>All Counties</option>
-                    <option>Nairobi</option>
-                    <option>Mombasa</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="homes-grid">
-            {% for home in homes %}
-            <div class="home-card">
-                
-                <div class="card-image-wrapper">
-                    {% if home.is_urgent %}
-                        <span class="badge critical">Critical Need</span>
-                    {% endif %}
-                    {% if home.is_verified %}
-                        <span class="badge verified">✓ Verified</span>
-                    {% endif %}
-                    <img src="{{ home.image.url }}" alt="{{ home.name }}">
-                </div>
-
-                <div class="card-info">
-                    <h3>{{ home.name }}</h3>
-                    <p class="location-text">📍 {{ home.county }}, {{ home.sub_county }}</p>
-                    
-                    <div class="stats-row">
-                        <span>👥 50 children</span>
-                        <span>📊 75% capacity</span>
-                    </div>
-
-                    <div class="urgent-needs-box">
-                        <p class="needs-title">🚨 Urgent Need</p>
-                        <div class="tags">
-                            <span class="tag">Food Supplies</span>
-                            <span class="tag">School Fees</span>
-                        </div>
-                    </div>
-
-                    <div class="card-buttons">
-                        <button class="btn-outline">View Profile</button>
-                        <button class="btn-solid">Donate ➔</button>
-                    </div>
-                </div>
-
-            </div>
-            {% empty %}
-            <div class="no-homes">
-                <p>No homes found. Try adjusting your search.</p>
-            </div>
-            {% endfor %}
-        </div>
-    </main>
-</div>
-{% endblock content %}
+</section>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ home.name }} | HomeCare Kenya{% endblock %}
+{% block content %}
+<section class="profile-page section-shell">
+    <a class="text-link back-link" href="{% url 'find_homes' %}"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to directory</a>
+    <div class="profile-hero">
+        <img src="{% static 'images/pexels-mwauraken-29079409.jpg' %}" alt="Illustrative community photo">
+        <div class="profile-title">
+            <span class="eyebrow">{{ home.location }} County · General location</span>
+            <h1>{{ home.name }}</h1>
+            <span class="unverified-label">{{ home.is_verified|yesno:"Verified organization,Registration listed · Verification pending" }}</span>
+        </div>
+    </div>
+    <div class="profile-columns">
+        <section class="profile-main">
+            <p class="eyebrow">About the organization</p>
+            <h2>Community care, built around belonging.</h2>
+            <p>{{ home.descripttion }}</p>
+            <div class="privacy-callout"><i class="fa-solid fa-lock" aria-hidden="true"></i><p>Children's names, personal histories, school details and private photographs are not displayed on this public profile.</p></div>
+            <div class="profile-section-title"><h2>Current needs</h2><span class="demo-tag">Live needs are not yet available</span></div>
+            <div class="profile-empty"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i><p>This prototype does not yet store organization needs. Contact the organization to confirm what support is currently useful.</p></div>
+        </section>
+        <aside class="profile-aside">
+            <h3>Connect thoughtfully</h3>
+            <p>Check availability and suitability before arranging any contribution or visit.</p>
+            <a class="button profile-action" href="{% url 'Donations' %}">Explore ways to support <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+            <a class="button button-light profile-action" href="{% url 'Bookings' %}">Request a visit</a>
+            <div class="profile-safe-note"><i class="fa-solid fa-shield-heart" aria-hidden="true"></i> Visits and activities require the home's approval.</div>
+        </aside>
+    </div>
+</section>
+{% endblock %}

@@ -10,7 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
+
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -19,13 +23,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-(amtx_j%idmpas7_6@quf0l*16vv40rj9aq=@3nxv%6d7holt#'
+DEBUG = os.environ.get("DEBUG", "true").strip().lower() in {"1", "true", "yes"}
+SECRET_KEY = os.environ.get("SECRET_KEY", "")
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured("SECRET_KEY must be configured when DEBUG is false.")
+    SECRET_KEY = "local-development-only-change-before-deployment"
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",")
+    if host.strip()
+]
+if not DEBUG and not ALLOWED_HOSTS:
+    raise ImproperlyConfigured("Set ALLOWED_HOSTS to the deployed hostnames.")
 
 
 # Application definition
@@ -49,6 +60,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+if not DEBUG:
+    MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
 ROOT_URLCONF = 'FIRSTPROJECT.urls'
 
@@ -62,6 +75,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'firstApp.context_processors.homecare_config',
             ],
         },
     },
@@ -73,12 +87,32 @@ WSGI_APPLICATION = 'FIRSTPROJECT.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
+if DATABASE_URL:
+    database_url = urlsplit(DATABASE_URL)
+    if database_url.scheme not in {"postgres", "postgresql"} or not database_url.hostname:
+        raise ImproperlyConfigured("DATABASE_URL must be a PostgreSQL connection URL.")
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": unquote(database_url.path.lstrip("/")),
+            "USER": unquote(database_url.username or ""),
+            "PASSWORD": unquote(database_url.password or ""),
+            "HOST": database_url.hostname,
+            "PORT": database_url.port or "5432",
+            "CONN_MAX_AGE": 60,
+            "OPTIONS": {"sslmode": "require"} if not DEBUG else {},
+        }
     }
-}
+elif DEBUG:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+else:
+    raise ImproperlyConfigured("DATABASE_URL is required when DEBUG is false.")
 
 
 # Password validation
@@ -119,7 +153,56 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
-import os # Make sure this is imported at the top of your file
+STATIC_ROOT = BASE_DIR / "staticfiles"
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
+}
+
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+X_FRAME_OPTIONS = "DENY"
+SECURE_SSL_REDIRECT = not DEBUG
+SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "0")) if not DEBUG else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = (
+    os.environ.get("SECURE_HSTS_INCLUDE_SUBDOMAINS", "false").lower() == "true"
+)
+SECURE_HSTS_PRELOAD = os.environ.get("SECURE_HSTS_PRELOAD", "false").lower() == "true"
+SECURE_PROXY_SSL_HEADER = (
+    ("HTTP_X_FORWARDED_PROTO", "https")
+    if os.environ.get("TRUST_X_FORWARDED_PROTO", "false").lower() == "true"
+    else None
+)
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+
+HOMECARE_API_BASE_URL = os.environ.get('HOMECARE_API_BASE_URL', '').rstrip('/')
+if HOMECARE_API_BASE_URL:
+    api_origin = urlsplit(HOMECARE_API_BASE_URL)
+    is_local_api = api_origin.hostname in {'localhost', '127.0.0.1', '::1'}
+    is_secure_api = api_origin.scheme == 'https'
+    is_local_development_api = DEBUG and api_origin.scheme == 'http' and is_local_api
+    if (
+        not api_origin.netloc
+        or api_origin.username
+        or api_origin.password
+        or api_origin.path not in {'', '/'}
+        or api_origin.query
+        or api_origin.fragment
+        or not (is_secure_api or is_local_development_api)
+    ):
+        raise ImproperlyConfigured(
+            'HOMECARE_API_BASE_URL must be an HTTPS origin (or a local HTTP origin in DEBUG).'
+        )
 
 # The URL prefix used to access these files in the browser
 MEDIA_URL = '/media/'

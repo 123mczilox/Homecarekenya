@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Contribute | HomeCare Kenya{% endblock %}
+{% block content %}
+<section class="prototype-page section-shell narrow-page">
+    <div class="page-intro-row">
+        <div>
+            <p class="eyebrow">Give with intention</p>
+            <h1>Your contribution, clearly tracked.</h1>
+            <p>Choose a specific verified home, support an outstanding need, or allow FairMatch to recommend where
+                suitable resources may help most.</p>
+        </div><span class="demo-tag"><i class="fa-solid fa-flask" aria-hidden="true"></i> Demo only</span>
+    </div>
+    {% if submitted %}<div class="notice notice-success"><i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+        <div><b>Contribution preview complete</b><span>Nothing was submitted, saved or charged. This prototype does not
+                process donations or payments.</span></div>
+    </div>{% endif %}
+    <form class="panel workflow-form donation-form" method="post" data-api-endpoint="/api/v1/contributions/">{% csrf_token %}<fieldset>
+            <legend>What would you like to contribute?</legend>
+            <div class="choice-grid"><label class="choice-card"><input type="radio" name="resource_type" value="money"
+                        required><span><i class="fa-solid fa-coins" aria-hidden="true"></i><b>Money</b><small>Payment
+                            flow not connected</small></span></label><label class="choice-card"><input type="radio"
+                        name="resource_type" value="food"><span><i class="fa-solid fa-carrot"
+                            aria-hidden="true"></i><b>Food</b><small>Suitable surplus only</small></span></label><label
+                    class="choice-card"><input type="radio" name="resource_type" value="supplies"><span><i
+                            class="fa-solid fa-box-open" aria-hidden="true"></i><b>Essential
+                            supplies</b><small>Clothing, books, hygiene</small></span></label></div>
+        </fieldset>
+        <fieldset>
+            <legend>How should your contribution be directed?</legend>
+            <div class="choice-grid choice-grid-two"><label class="choice-card"><input type="radio" name="direction"
+                        value="need" required><span><i class="fa-solid fa-list-check" aria-hidden="true"></i><b>Choose a
+                            specific need</b><small>Confirm the need is current with the
+                            home.</small></span></label><label class="choice-card"><input type="radio" name="direction"
+                        value="fairmatch"><span><i class="fa-solid fa-scale-balanced"
+                            aria-hidden="true"></i><b>FairMatch recommendation</b><small>Coordinator approval is still
+                            required.</small></span></label></div>
+        </fieldset>
+        <div class="form-row"><label>Item or amount description<input name="description"
+                    placeholder="Describe your intended contribution"></label><label>Available quantity<input
+                    name="quantity" type="text" placeholder="Amount or quantity"></label></div>
+        <div class="form-row"><label>Your name<input name="donor_name" autocomplete="name"
+                    placeholder="Name"></label><label>Email<input name="email" type="email" autocomplete="email"
+                    placeholder="Email address"></label></div><label class="checkbox-label"><input type="checkbox"
+                required><span>I understand this is a demonstration only and does not create a pledge or
+                payment.</span></label><input type="hidden" name="demo_consent" value="true"><button class="button" type="submit">Preview contribution <i
+                class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+        <p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p>
+        <p class="form-footnote">No payment provider is connected. A contribution is never shown as received until
+            delivery or payment is confirmed.</p>
+    </form>
+</section>
+{% endblock %}

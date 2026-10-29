@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Request a Visit | HomeCare Kenya{% endblock %}
+{% block content %}
+<section class="prototype-page section-shell narrow-page">
+    <div class="page-intro-row">
+        <div>
+            <p class="eyebrow">Visit with care</p>
+            <h1>Request a home visit.</h1>
+            <p>Visits happen only at times approved by the organization. This preview does not show real availability or
+                confirm a booking.</p>
+        </div><span class="demo-tag"><i class="fa-solid fa-flask" aria-hidden="true"></i> Demo availability</span>
+    </div>
+    {% if submitted %}<div class="notice notice-success"><i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+        <div><b>Request preview created</b><span>No booking was sent or reserved. Contact the organization to arrange an
+                approved visit.</span></div>
+    </div>{% endif %}
+    <div class="booking-layout">
+        <form class="panel workflow-form" method="post" data-api-endpoint="/api/v1/visit-requests/">{% csrf_token %}<div class="form-row"><label>Organization<select
+                        name="home" required>
+                        <option value="">Choose a home</option>{% for home in homes %}<option value="{{ home.pk }}">{{
+                            home.name }} · {{ home.location }}</option>{% endfor %}
+                    </select></label><label>Proposed date<input name="date" type="date" required></label></div>
+            <label>Sample time window<select name="time" required>
+                    <option value="">Choose a time</option>
+                    <option value="morning">Morning · sample only</option>
+                    <option value="afternoon">Afternoon · sample only</option>
+                </select></label>
+            <div class="form-row"><label>Number of visitors<input type="number" name="visitor_count" min="1" max="10"
+                        required value="1"></label><label>Your name<input name="visitor_name" autocomplete="name"
+                        required></label></div><label>Email<input type="email" name="email" autocomplete="email"
+                    required></label><label>Purpose of visit<textarea name="purpose" rows="3" required
+                    placeholder="Tell the organization what you hope to do"></textarea></label><label>Accessibility or
+                scheduling notes<textarea name="notes" rows="2"></textarea></label><label class="checkbox-label"><input
+                    type="checkbox" required><span>I agree to follow the organization's visitor guidance and
+                        safeguarding requirements.</span></label><input type="hidden" name="visitor_conduct_accepted" value="true"><button class="button" type="submit">Preview visit request
+                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+                    <p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p>
+        </form>
+        <aside class="panel booking-guidance"><span class="panel-icon"><i class="fa-solid fa-shield-heart"
+                    aria-hidden="true"></i></span>
+            <h2>Safeguarding comes first.</h2>
+            <p>Never arrive without approval. Follow visitor conduct guidance, respect privacy, and do not photograph
+                children without explicit authorization.</p>
+            <div class="booking-state"><span class="status-pill status-review">Pending approval</span><small>Demo state
+                    only · no reference generated</small></div><a class="text-link" href="{% url 'find_homes' %}">Browse
+                organizations <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+        </aside>
+    </div>
+</section>
+{% endblock %}

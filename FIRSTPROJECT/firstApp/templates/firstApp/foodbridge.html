@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}FoodBridge | HomeCare Kenya{% endblock %}
+{% block content %}
+<section class="prototype-page section-shell">
+    <div class="page-intro-row">
+        <div>
+            <p class="eyebrow">Recover food. Support children's homes.</p>
+            <h1>FoodBridge</h1>
+            <p>Suitable surplus can help meet a verified need when safety, timing, storage and transport all work.</p>
+        </div><span class="demo-tag"><i class="fa-solid fa-flask" aria-hidden="true"></i> Prototype workflow</span>
+    </div>
+    {% if submitted %}<div class="notice notice-success"><i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+        <div><b>Preview only</b><span>No listing was saved or sent. FoodBridge does not yet accept live supplier
+                offers.</span></div>
+    </div>{% endif %}
+    <div class="foodbridge-page-grid">
+        <section class="panel">
+            <div class="panel-heading">
+                <div><span class="small-label">Supplier workspace</span>
+                    <h2>List suitable surplus food</h2>
+                </div><span class="panel-icon"><i class="fa-solid fa-seedling" aria-hidden="true"></i></span>
+            </div>
+            <div class="notice notice-warning"><i class="fa-solid fa-triangle-exclamation"
+                    aria-hidden="true"></i><span>Only food that is safe, in suitable condition and within its use-by
+                    date can be offered. Never list expired or unsafe food.</span></div>
+            <form method="post" class="workflow-form" data-api-endpoint="/api/v1/food-offers/">{% csrf_token %}<label>Food name<input name="food_name" required
+                        placeholder="e.g. Fresh produce boxes"></label>
+                <div class="form-row"><label>Category<select name="category" required>
+                            <option value="">Choose category</option>
+                            <option value="fresh_produce">Fresh produce</option>
+                            <option value="dry_goods">Dry goods</option>
+                            <option value="dairy">Dairy</option>
+                            <option value="prepared_food">Prepared food</option>
+                            <option value="other">Other</option>
+                        </select></label><label>Available quantity<input name="quantity" type="number" min="1" required
+                            placeholder="Quantity"></label></div>
+                <div class="form-row"><label>Unit<input name="unit" required
+                            placeholder="kg, boxes, crates"></label><label>General collection area<input name="location"
+                            required placeholder="Town or county only"></label></div>
+                <div class="form-row"><label>Collection window<input name="collection_window" required
+                            placeholder="Date and time range"></label><label>Use-by / expiry date<input
+                            name="expiry_date" type="date" required></label></div><label>Handling and storage
+                    requirements<textarea name="handling" rows="3"
+                        placeholder="Temperature, packaging, pickup requirements"></textarea></label><label
+                    class="checkbox-label"><input type="checkbox" name="food_safety_confirmed" value="true" required><span>I confirm the food is safe, correctly
+                        stored and suitable for redistribution.</span></label><button class="button"
+                    type="submit">Preview listing <i class="fa-solid fa-arrow-right"
+                        aria-hidden="true"></i></button><p class="form-feedback" data-form-feedback role="status" aria-live="polite"></p><small class="form-footnote">This preview is not saved and does
+                    not arrange collection.</small>
+            </form>
+        </section>
+        <aside class="foodbridge-aside">
+            <div class="panel"><span class="small-label">How a listing moves</span>
+                <div class="vertical-flow">
+                    <div><span>01</span><b>Eligibility review</b><small>Food safety, condition and timing</small></div>
+                    <div><span>02</span><b>Recipient suggested</b><small>Suitable outstanding need and capacity</small>
+                    </div>
+                    <div><span>03</span><b>Coordinator approves</b><small>No automatic food allocation</small></div>
+                    <div><span>04</span><b>Receipt confirmed</b><small>Only received quantity counts as impact</small>
+                    </div>
+                </div>
+            </div>
+            <div class="panel listing-demo"><span class="demo-tag">Sample listing</span>
+                <h3>Seasonal vegetables</h3>
+                <p>Illustrative supplier offer · Nairobi general area</p>
+                <div class="listing-state"><i class="fa-regular fa-clock" aria-hidden="true"></i><span>Awaiting
+                        eligibility review</span></div><small>Not available for pickup. Demonstration content
+                    only.</small>
+            </div>
+        </aside>
+    </div>
+</section>
+{% endblock %}
