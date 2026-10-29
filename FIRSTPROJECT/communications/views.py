@@ -1,15 +1,16 @@
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
+from django.http import HttpResponse, JsonResponse
+from django.views.decorators.csrf import csrf_exempt, csrf_protect, ensure_csrf_cookie
 
-from .services import send_sms
+from .services import build_ussd_response, send_sms
 
 
 @ensure_csrf_cookie
 def test_sms(request):
-    phone_number = request.GET.get('to') or '+254700000000'
+    recipients = request.GET.get('to') or '+254700000000'
     message = request.GET.get('message') or "HomeCareKenya: test SMS from Africa's Talking"
+    sender_id = request.GET.get('sender') or None
 
-    result = send_sms(phone_number, message)
+    result = send_sms(recipients, message, sender_id=sender_id)
     return JsonResponse(result)
 
 
@@ -24,3 +25,15 @@ def africastalking_webhook(request):
         'provider': 'africastalking',
         'payload': payload,
     })
+
+
+@csrf_exempt
+def ussd_callback(request):
+    if request.method != 'POST':
+        return HttpResponse('END Method not allowed.', content_type='text/plain; charset=utf-8')
+
+    phone_number = request.POST.get('phoneNumber') or request.GET.get('phoneNumber')
+    text = request.POST.get('text') or request.GET.get('text') or ''
+
+    response_text = build_ussd_response(text, phone_number)
+    return HttpResponse(response_text, content_type='text/plain; charset=utf-8')

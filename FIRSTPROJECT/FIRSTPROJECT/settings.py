@@ -23,6 +23,10 @@ from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = BASE_DIR.parent
+
+# Load environment variables from the repo root and the project root for compatibility.
+load_dotenv(PROJECT_ROOT / '.env')
 load_dotenv(BASE_DIR / '.env')
 
 
