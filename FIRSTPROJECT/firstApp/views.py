@@ -180,17 +180,53 @@ def events(request):
     if request.method == "POST" and request.POST.get("action") == "unsubscribe":
         unsubscribe_form = EventSmsUnsubscribeForm(request.POST)
         if unsubscribe_form.is_valid():
-            EventSmsSubscriber.objects.filter(
+            updated_count = EventSmsSubscriber.objects.filter(
                 phone_number=unsubscribe_form.cleaned_data["phone_number"],
                 is_active=True,
             ).update(is_active=False)
-            messages.success(request, "If that number was subscribed, it is now unsubscribed.")
+            if updated_count:
+                result = send_sms(
+                    [unsubscribe_form.cleaned_data["phone_number"]],
+                    "HomeCare Kenya: You have unsubscribed from event SMS reminders.",
+                )
+                if result.get("status") == "sent":
+                    messages.success(request, "You are unsubscribed from event SMS reminders.")
+                else:
+                    logger.warning(
+                        "Event SMS unsubscription confirmation failed: %s",
+                        result.get("error") or result.get("message") or result.get("status"),
+                    )
+                    messages.warning(
+                        request,
+                        "You are unsubscribed, but we could not send the confirmation SMS.",
+                    )
+            else:
+                messages.success(request, "If that number was subscribed, it is now unsubscribed.")
             return redirect("events")
     elif request.method == "POST":
         subscription_form = EventSmsSubscriptionForm(request.POST)
         if subscription_form.is_valid():
-            subscription_form.save()
-            messages.success(request, "You are subscribed to upcoming event SMS alerts.")
+            subscriber = subscription_form.save()
+            result = send_sms(
+                [subscriber.phone_number],
+                (
+                    "HomeCare Kenya: You are subscribed to event SMS reminders. "
+                    "We will text you three days before published upcoming events. "
+                    "Unsubscribe anytime at homecarekenya.onrender.com/events/."
+                ),
+            )
+            if result.get("status") == "sent":
+                messages.success(request, "You are subscribed to upcoming event SMS alerts.")
+            else:
+                logger.warning(
+                    "Event SMS subscription confirmation failed: %s",
+                    result.get("error") or result.get("message") or result.get("status"),
+                )
+                messages.warning(
+                    request,
+                    "Your subscription is saved, but we could not send a confirmation SMS. "
+                    "You remain subscribed to upcoming event reminders.",
+                )
             return redirect("events")
 
     return render(

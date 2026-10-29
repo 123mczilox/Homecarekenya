@@ -261,7 +261,10 @@ class HomeCarePrototypeTests(TestCase):
         mock_send_sms.assert_called_once()
         self.assertEqual(mock_send_sms.call_args.args[0], ["+254700000002"])
 
-    def test_event_subscriber_requires_consent_and_valid_international_phone(self):
+    @patch("firstApp.views.send_sms", return_value={"status": "sent"})
+    def test_event_subscriber_requires_consent_and_valid_international_phone(
+        self, mock_send_sms
+    ):
         response = self.client.post(
             "/events/",
             {"phone_number": "+254700000001"},
@@ -286,8 +289,12 @@ class HomeCarePrototypeTests(TestCase):
         )
         self.assertEqual(response.status_code, 302)
         self.assertTrue(EventSmsSubscriber.objects.get().is_active)
+        mock_send_sms.assert_called_once()
+        self.assertEqual(mock_send_sms.call_args.args[0], ["+254700000001"])
+        self.assertIn("subscribed to event SMS reminders", mock_send_sms.call_args.args[1])
 
-    def test_event_subscriber_can_unsubscribe(self):
+    @patch("firstApp.views.send_sms", return_value={"status": "sent"})
+    def test_event_subscriber_can_unsubscribe(self, mock_send_sms):
         EventSmsSubscriber.objects.create(phone_number="+254700000001")
 
         response = self.client.post(
@@ -297,6 +304,36 @@ class HomeCarePrototypeTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertFalse(EventSmsSubscriber.objects.get().is_active)
+        mock_send_sms.assert_called_once_with(
+            ["+254700000001"],
+            "HomeCare Kenya: You have unsubscribed from event SMS reminders.",
+        )
+
+    @patch("firstApp.views.send_sms", return_value={"status": "sent"})
+    def test_unknown_number_unsubscribe_does_not_send_sms(self, mock_send_sms):
+        response = self.client.post(
+            "/events/",
+            {"action": "unsubscribe", "phone_number": "+254700000001"},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        mock_send_sms.assert_not_called()
+
+    @patch("firstApp.views.send_sms", return_value={"status": "disabled"})
+    def test_subscription_saved_when_confirmation_sms_fails(self, _mock_send_sms):
+        response = self.client.post(
+            "/events/",
+            {
+                "action": "subscribe",
+                "phone_number": "+254700000001",
+                "consent": "true",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(EventSmsSubscriber.objects.get().is_active)
+        self.assertContains(response, "You remain subscribed")
 
     def test_event_page_only_displays_published_upcoming_events(self):
         local_event_date = timezone.localdate(timezone=ZoneInfo("Africa/Nairobi"))
