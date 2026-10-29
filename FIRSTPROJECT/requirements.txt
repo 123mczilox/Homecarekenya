@@ -7,3 +7,4 @@ python-dotenv==1.1.0
 sqlparse==0.5.5
 whitenoise>=6.8,<7
 gunicorn==21.2.0
+africastalking>=1.2,<2
