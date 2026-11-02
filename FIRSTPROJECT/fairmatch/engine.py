@@ -223,6 +223,21 @@ def _convert_to_common_unit(amount: float, from_unit: str, to_unit: str) -> floa
     return amount
 
 
+def convert_quantity(amount: Any, from_unit: str, to_unit: str) -> float:
+    """Convert between units supported by FairMatch."""
+    normalized_from = _normalize_unit(from_unit)
+    normalized_to = _normalize_unit(to_unit)
+    if not _compatible_units(normalized_from, normalized_to):
+        raise ValueError(f"Cannot convert {from_unit!r} to {to_unit!r}.")
+    common_unit = _common_unit(normalized_from, normalized_to)
+    common_amount = _convert_to_common_unit(
+        _as_float(amount),
+        normalized_from,
+        common_unit,
+    )
+    return _convert_to_common_unit(common_amount, common_unit, normalized_to)
+
+
 def _amount_to_common_unit(amount: float, unit: str) -> float:
     if unit == "g" and not amount:
         return 0.0
@@ -277,15 +292,8 @@ def check_eligibility(
             available = _convert_to_common_unit(available, offer_unit, _common_unit(need_unit, offer_unit))
             outstanding = _convert_to_common_unit(outstanding, need_unit, _common_unit(need_unit, offer_unit))
 
-        already_reserved = 0.0
-        for allocation in allocation_history or []:
-            if not isinstance(allocation, dict):
-                continue
-            if allocation.get("resource_id") == resource_offer.get("resource_id"):
-                already_reserved += _as_float(allocation.get("quantity_allocated"), 0.0)
-        remaining = max(0.0, available - already_reserved)
-        if remaining <= 0:
-            reasons.append("Resource quantity is already fully reserved.")
+        if available <= 0:
+            reasons.append("No resource quantity is available.")
 
         if need.get("verification_status") not in ("verified", "approved"):
             reasons.append("Need is not verified.")
@@ -408,9 +416,7 @@ def _recommend_quantity(need: Dict[str, Any], remaining_available: float, resour
         need_unit = _normalize_unit(need.get("unit"))
         offer_unit = _normalize_unit(resource_offer.get("unit"))
         if need_unit and offer_unit and need_unit != offer_unit:
-            common = _common_unit(need_unit, offer_unit)
-            outstanding = _convert_to_common_unit(outstanding, need_unit, common)
-            remaining_available = _convert_to_common_unit(remaining_available, offer_unit, common)
+            outstanding = _convert_to_common_unit(outstanding, need_unit, offer_unit)
 
     return max(0.0, min(outstanding, remaining_available))
 
@@ -470,19 +476,11 @@ def recommend_allocations(
         if need_match is None:
             continue
 
-        already_reserved = 0.0
-        for allocation in allocation_history or []:
-            if not isinstance(allocation, dict):
-                continue
-            if allocation.get("resource_id") == resource_offer.get("resource_id") and allocation.get("need_id") == need_match.get("need_id"):
-                already_reserved += _as_float(allocation.get("quantity_allocated"), 0.0)
-
         remaining_available = max(0.0, available - allocated_total)
         if remaining_available <= 0:
             break
 
         quantity = _recommend_quantity(need_match, remaining_available, resource_offer)
-        quantity = max(0.0, quantity - already_reserved)
         if quantity <= 0:
             continue
 

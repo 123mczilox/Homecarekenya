@@ -19,8 +19,8 @@
           needs, accountable delivery and child safeguarding.</span></div>
     </div>
     <div class="hero-visual">
-      <img class="hero-photo" src="{% static 'images/ubunntuphotos3.jpg' %}"
-        alt="A child playing with a bright green balloon outdoors">
+      <img class="hero-photo" src="{% static 'images/pexels-cottonbro-6157209.jpg' %}"
+        alt="A welcoming shared bedroom prepared for residents">
       <div class="photo-caption"><span class="caption-marker"></span><span>Community begins with being present</span>
       </div>
       <div class="match-note">
@@ -37,12 +37,9 @@
             placeholder="Name or general location"></span></label>
       <label class="search-field county-field"><span>County</span><select name="county">
           <option value="">All counties</option>
-          <option>Nairobi</option>
-          <option>Nakuru</option>
-          <option>Kiambu</option>
-          <option>Mombasa</option>
-          <option>Kisumu</option>
-          <option>Nyandarua</option>
+          {% for value, label in counties %}
+          <option value="{{ value }}">{{ label }}</option>
+          {% endfor %}
         </select></label>
       <button class="button search-button" type="submit">Search homes <i class="fa-solid fa-arrow-right"
           aria-hidden="true"></i></button>
@@ -226,7 +223,7 @@
     <div class="footer-column"><b>Take part</b><a href="{% url 'Donations' %}">Donate</a><a
         href="{% url 'foodbridge' %}">FoodBridge</a><a href="{% url 'fairmatch' %}">FairMatch</a></div>
     <div class="footer-column"><b>For organizations</b><a href="{% url 'home-register' %}">Register a home</a><a
-        href="{% url 'homed' %}">Home dashboard</a><a href="{% url 'admin-dashboard' %}">Platform dashboard</a></div>
+        href="{% url 'login' %}">Sign in to a workspace</a></div>
   </div>
   <div class="section-shell footer-bottom"><span>HomeCare Kenya · Community prototype</span><span>Sample information is
       illustrative and does not represent live requests or completed contributions.</span></div>

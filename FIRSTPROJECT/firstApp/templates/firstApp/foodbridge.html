@@ -6,7 +6,8 @@
         <div>
             <p class="eyebrow">Recover food. Support children's homes.</p>
             <h1>FoodBridge</h1>
-            <p>Suitable surplus can help meet a verified need when safety, timing, storage and transport all work.</p>
+            <p>Suitable surplus can help meet a verified need when safety, timing, storage and transport all work.
+                Approved offers are evaluated against live FairMatch needs.</p>
         </div>
     </div>
     <div class="foodbridge-page-grid">
@@ -19,7 +20,7 @@
             <div class="notice notice-warning"><i class="fa-solid fa-triangle-exclamation"
                     aria-hidden="true"></i><span>Only food that is safe, in suitable condition and within its use-by
                     date can be offered. Never list expired or unsafe food.</span></div>
-            <form method="post" class="workflow-form" data-api-endpoint="/api/v1/food-offers/" action="">{% csrf_token %}{{ form.errors }}<label>Food name<input name="food_name" required value="{{ form.food_name.value|default_if_none:'' }}" placeholder="e.g. Fresh produce boxes"></label>
+            <form method="post" class="workflow-form" action="">{% csrf_token %}{{ form.errors }}<label>Food name<input name="food_name" maxlength="120" required value="{{ form.food_name.value|default_if_none:'' }}" placeholder="e.g. Maize flour"></label>
                 <div class="form-row"><label>Category<select name="category" required>
                             <option value="">Choose category</option>
                             <option value="fresh_produce" {% if form.category.value == "fresh_produce" %}selected{% endif %}>Fresh produce</option>
@@ -29,7 +30,7 @@
                             <option value="other" {% if form.category.value == "other" %}selected{% endif %}>Other</option>
                         </select></label><label>Available quantity<input name="quantity" type="number" min="1" required
                             value="{{ form.quantity.value|default_if_none:'' }}" placeholder="Quantity"></label></div>
-                <div class="form-row"><label>Unit<input name="unit" required value="{{ form.unit.value|default_if_none:'' }}"
+                <div class="form-row"><label>Unit<input name="unit" maxlength="20" required value="{{ form.unit.value|default_if_none:'' }}"
                             placeholder="kg, boxes, crates"></label><label>General collection area<input name="location"
                             required value="{{ form.location.value|default_if_none:'' }}" placeholder="Town or county only"></label></div>
                 <div class="form-row"><label>Contact name<input name="contact_name" required autocomplete="name"
@@ -68,6 +69,9 @@
                     Do not include children’s personal information.</p>
                 <div class="listing-state"><i class="fa-regular fa-clock" aria-hidden="true"></i><span>Every offer
                         remains pending until reviewed</span></div>
+                <a class="text-link" href="{% url 'fairmatch' %}">See current recommendations
+                    <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                </a>
             </div>
         </aside>
     </div>

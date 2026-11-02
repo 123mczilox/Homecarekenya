@@ -1,56 +1,162 @@
 {% extends 'base.html' %}
-{% block title %}Platform Overview | HomeCare Kenya{% endblock %}
+{% block title %}Operations dashboard | HomeCare Kenya{% endblock %}
 {% block content %}
 <section class="dashboard-page">
-    <aside class="dashboard-sidebar"><a class="dashboard-brand" href="{% url 'home' %}"><span class="brand-mark"><i
-                    class="fa-solid fa-hands-holding-child" aria-hidden="true"></i></span><b>Platform admin</b></a><span
-            class="sidebar-label">OPERATIONS</span><a class="sidebar-link sidebar-active"
-            href="{% url 'admin-dashboard' %}"><i class="fa-solid fa-chart-line" aria-hidden="true"></i> Overview</a><a
-            class="sidebar-link" href="{% url 'find_homes' %}"><i class="fa-regular fa-building" aria-hidden="true"></i>
-            Organizations</a><a class="sidebar-link" href="{% url 'fairmatch' %}"><i class="fa-solid fa-scale-balanced"
-                aria-hidden="true"></i> Allocations</a><a class="sidebar-link" href="{% url 'foodbridge' %}"><i
-                class="fa-solid fa-carrot" aria-hidden="true"></i> FoodBridge</a><a class="sidebar-link"
-            href="{% url 'events' %}"><i class="fa-regular fa-flag" aria-hidden="true"></i> Moderation</a>
-        <div class="sidebar-bottom"><a class="sidebar-link" href="{% url 'home' %}"><i class="fa-solid fa-arrow-left"
-                    aria-hidden="true"></i> Public website</a></div>
+    <aside class="dashboard-sidebar">
+        <a class="dashboard-brand" href="{% url 'admin-dashboard' %}">
+            <span class="brand-mark"><i class="fa-solid fa-hands-holding-child" aria-hidden="true"></i></span>
+            <b>Operations</b>
+        </a>
+        <span class="sidebar-label">WORKSPACE</span>
+        <a class="sidebar-link sidebar-active" href="{% url 'admin-dashboard' %}">
+            <i class="fa-solid fa-chart-line" aria-hidden="true"></i> Overview
+        </a>
+        <a class="sidebar-link" href="{% url 'fairmatch' %}">
+            <i class="fa-solid fa-scale-balanced" aria-hidden="true"></i> FairMatch
+        </a>
+        {% if review_permissions.homeregistration %}
+        <a class="sidebar-link" href="{% url 'admin:firstApp_homeregistration_changelist' %}">
+            <i class="fa-regular fa-building" aria-hidden="true"></i> Organizations
+        </a>
+        {% endif %}
+        {% if review_permissions.homeneed %}
+        <a class="sidebar-link" href="{% url 'admin:firstApp_homeneed_changelist' %}">
+            <i class="fa-solid fa-list-check" aria-hidden="true"></i> Needs
+        </a>
+        {% endif %}
+        {% if review_permissions.contributionpledge %}
+        <a class="sidebar-link" href="{% url 'admin:firstApp_contributionpledge_changelist' %}">
+            <i class="fa-solid fa-heart" aria-hidden="true"></i> Pledges
+        </a>
+        {% endif %}
+        {% if review_permissions.foodbridgelisting %}
+        <a class="sidebar-link" href="{% url 'admin:firstApp_foodbridgelisting_changelist' %}">
+            <i class="fa-solid fa-carrot" aria-hidden="true"></i> FoodBridge
+        </a>
+        {% endif %}
+        {% if review_permissions.bookingrequest %}
+        <a class="sidebar-link" href="{% url 'admin:firstApp_bookingrequest_changelist' %}">
+            <i class="fa-regular fa-calendar" aria-hidden="true"></i> Visit requests
+        </a>
+        {% endif %}
+        <div class="sidebar-bottom">
+            <a class="sidebar-link" href="{% url 'home' %}">
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Public website
+            </a>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button class="sidebar-link sidebar-logout" type="submit">
+                    <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i> Sign out
+                </button>
+            </form>
+        </div>
     </aside>
     <div class="dashboard-main">
         <div class="dashboard-topline">
             <div>
                 <p class="eyebrow">Platform operations</p>
-                <h1>Overview</h1>
-            </div><span class="demo-tag">Demonstration data</span>
+                <h1>Good to see you, {{ user.get_short_name|default:user.username }}.</h1>
+                <p>Review incoming requests and keep decisions accountable.</p>
+            </div>
+            <a class="button button-small" href="{% url 'admin:index' %}">
+                Open admin workspace <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+            </a>
         </div>
-        <div class="notice notice-warning"><i class="fa-solid fa-lock" aria-hidden="true"></i><span>Administrative
-                controls are not authenticated or connected to live records in this prototype.</span></div>
+        {% if HOMECARE_API_BASE_URL %}
+        <div class="notice notice-warning" role="status">
+            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+            <span>A separate API is configured. This dashboard reads Django's database; confirm the API shares these records before using its submissions in review.</span>
+        </div>
+        {% endif %}
         <div class="dashboard-metrics">
-            <article><span>Registered organizations</span><b>—</b><small>Live count not available</small></article>
-            <article><span>Verification reviews</span><b>—</b><small>Queue not connected</small></article>
-            <article><span>Pending allocations</span><b>—</b><small>No live allocation records</small></article>
-            <article><span>Confirmed deliveries</span><b>—</b><small>Impact data not available</small></article>
+            <article><span>Organization reviews</span><b>{{ pending_registrations }}</b><small>Awaiting verification</small></article>
+            <article><span>Needs to review</span><b>{{ pending_needs }}</b><small>Not yet published</small></article>
+            <article><span>Contribution pledges</span><b>{{ pending_pledges }}</b><small>Awaiting follow-up</small></article>
+            <article><span>Food offers</span><b>{{ pending_food_offers }}</b><small>Safety review required</small></article>
         </div>
-        <div class="dashboard-columns">
-            <section class="panel">
-                <div class="panel-heading">
-                    <div><span class="small-label">Review queue</span>
-                        <h2>Items requiring attention</h2>
-                    </div><span class="status-pill status-review">No live queue</span>
+        <section class="panel dashboard-queue">
+            <div class="panel-heading">
+                <div>
+                    <span class="small-label">Review queue</span>
+                    <h2>Items needing attention</h2>
                 </div>
-                <div class="admin-queue-empty"><i class="fa-regular fa-clipboard" aria-hidden="true"></i>
-                    <p>Verification requests, delivery disputes and moderation reports will appear here when the
-                        corresponding workflows are connected.</p>
+                <span class="status-pill status-review">
+                    {{ pending_visits|add:pending_allocations }} other reviews
+                </span>
+            </div>
+            <div class="dashboard-queue-grid">
+                <div class="dashboard-queue-item">
+                    <span class="queue-icon"><i class="fa-regular fa-building" aria-hidden="true"></i></span>
+                    <span><b>{% if review_permissions.homeregistration %}<a href="{% url 'admin:firstApp_homeregistration_changelist' %}">Organization applications</a>{% else %}Organization applications{% endif %}</b><small>Verify before linking a workspace</small></span>
+                    <strong>{{ pending_registrations }}</strong>
                 </div>
-            </section>
-            <section class="panel"><span class="small-label">Distribution principles</span>
-                <h2>Decisions that can be reviewed</h2>
-                <p>Allocation history should show eligibility checks, score factors, approved quantities, overrides and
-                    recorded reasons.</p><a class="text-link" href="{% url 'fairmatch' %}">Review FairMatch model <i
-                        class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
-            </section>
-        </div>
-        <div class="panel audit-note"><i class="fa-solid fa-user-shield" aria-hidden="true"></i>
-            <div><b>Sensitive records require explicit authorization.</b>
-                <p>Child records and personal data are intentionally excluded from this dashboard prototype.</p>
+                <div class="dashboard-queue-item">
+                    <span class="queue-icon"><i class="fa-solid fa-list-check" aria-hidden="true"></i></span>
+                    <span><b>{% if review_permissions.homeneed %}<a href="{% url 'admin:firstApp_homeneed_changelist' %}">Needs</a>{% else %}Needs{% endif %}</b><small>Verify and publish separately</small></span>
+                    <strong>{{ pending_needs }}</strong>
+                </div>
+                <div class="dashboard-queue-item">
+                    <span class="queue-icon"><i class="fa-solid fa-heart" aria-hidden="true"></i></span>
+                    <span><b>{% if review_permissions.contributionpledge %}<a href="{% url 'admin:firstApp_contributionpledge_changelist' %}">Contribution pledges</a>{% else %}Contribution pledges{% endif %}</b><small>Not payments or confirmed deliveries</small></span>
+                    <strong>{{ pending_pledges }}</strong>
+                </div>
+                <div class="dashboard-queue-item">
+                    <span class="queue-icon"><i class="fa-solid fa-carrot" aria-hidden="true"></i></span>
+                    <span><b>{% if review_permissions.foodbridgelisting %}<a href="{% url 'admin:firstApp_foodbridgelisting_changelist' %}">FoodBridge offers</a>{% else %}FoodBridge offers{% endif %}</b><small>Review suitability and food safety</small></span>
+                    <strong>{{ pending_food_offers }}</strong>
+                </div>
+                <div class="dashboard-queue-item">
+                    <span class="queue-icon"><i class="fa-regular fa-calendar" aria-hidden="true"></i></span>
+                    <span><b>{% if review_permissions.bookingrequest %}<a href="{% url 'admin:firstApp_bookingrequest_changelist' %}">Visit requests</a>{% else %}Visit requests{% endif %}</b><small>Approval does not confirm a visit</small></span>
+                    <strong>{{ pending_visits }}</strong>
+                </div>
+                <div class="dashboard-queue-item">
+                    <span class="queue-icon"><i class="fa-solid fa-scale-balanced" aria-hidden="true"></i></span>
+                    <span><b>{% if review_permissions.allocation %}<a href="{% url 'admin:firstApp_allocation_changelist' %}">Allocations</a>{% else %}Allocations{% endif %}</b><small>Coordinator approval required</small></span>
+                    <strong>{{ pending_allocations }}</strong>
+                </div>
+            </div>
+        </section>
+        {% if review_permissions.homeregistration and registration_queue %}
+        <section class="panel dashboard-queue">
+            <div class="panel-heading">
+                <div>
+                    <span class="small-label">Organization applications</span>
+                    <h2>Pending registration review</h2>
+                </div>
+            </div>
+            <div class="dashboard-queue-grid">
+                {% for registration in registration_queue %}
+                <div class="dashboard-queue-item">
+                    <span class="queue-icon"><i class="fa-regular fa-building" aria-hidden="true"></i></span>
+                    <span>
+                        <b>{{ registration.name }}</b>
+                        <small>{{ registration.location }} · {{ registration.email }}</small>
+                        {% if not registration.applicant %}
+                        <small>Assign an existing account in the admin panel before approval.</small>
+                        {% endif %}
+                    </span>
+                    {% if can_change_registrations and registration.applicant %}
+                    <form method="post" action="{% url 'approve-home-registration' registration.pk %}">
+                        {% csrf_token %}
+                        <button class="button button-small" type="submit">Approve</button>
+                    </form>
+                    {% elif can_change_registrations %}
+                    <a class="button button-small"
+                        href="{% url 'admin:firstApp_homeregistration_change' registration.pk %}">
+                        Assign account
+                    </a>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+        <div class="panel audit-note">
+            <i class="fa-solid fa-user-shield" aria-hidden="true"></i>
+            <div>
+                <b>Child records remain out of this workspace.</b>
+                <p>Use verified organization links and review records through your assigned Django admin permissions.</p>
             </div>
         </div>
     </div>

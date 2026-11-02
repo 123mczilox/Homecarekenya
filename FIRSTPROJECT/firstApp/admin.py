@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.db import transaction
 
 from .models import (
     Allocation,
@@ -10,11 +11,14 @@ from .models import (
     EventSmsSubscriber,
     FoodBridgeListing,
     HomeNeed,
+    HomecareProfile,
     HomeRegistration,
     Hobby,
     ResourceOffer,
     Student,
 )
+from .matching import sync_foodbridge_resource_offer
+from .registration_workflow import approve_home_registration
 
 
 @admin.register(BookingRequest)
@@ -32,13 +36,25 @@ class FoodBridgeListingAdmin(admin.ModelAdmin):
     search_fields = ('food_name', 'contact_name', 'contact_email', 'location')
     readonly_fields = ('created_at', 'updated_at')
 
+    def save_model(self, request, obj, form, change):
+        with transaction.atomic():
+            super().save_model(request, obj, form, change)
+            sync_foodbridge_resource_offer(obj)
+
 
 @admin.register(HomeRegistration)
 class HomeRegistrationAdmin(admin.ModelAdmin):
-    list_display = ('name', 'location', 'email', 'status', 'created_at')
+    list_display = ('name', 'location', 'email', 'applicant', 'status', 'home', 'created_at')
     list_filter = ('status', 'location')
     search_fields = ('name', 'email', 'phone_number')
-    readonly_fields = ('created_at', 'updated_at')
+    raw_id_fields = ('applicant',)
+    readonly_fields = ('created_at', 'updated_at', 'home')
+
+    def save_model(self, request, obj, form, change):
+        with transaction.atomic():
+            super().save_model(request, obj, form, change)
+            if obj.status == 'approved':
+                obj.home = approve_home_registration(obj.pk)
 
 
 @admin.register(ContributionPledge)
@@ -96,3 +112,10 @@ admin.site.register(ChildrenHome)
 admin.site.register(Donor)
 admin.site.register(ResourceOffer)
 admin.site.register(Allocation)
+
+
+@admin.register(HomecareProfile)
+class HomecareProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'role', 'home', 'donor')
+    list_filter = ('role',)
+    search_fields = ('user__username', 'user__email', 'home__name', 'donor__full_name')

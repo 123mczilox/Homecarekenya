@@ -13,7 +13,7 @@
     {% if not homes %}<div class="notice notice-warning"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>
         <span>No verified organizations are currently available to receive visit requests.</span></div>{% endif %}
     <div class="booking-layout">
-        <form class="panel workflow-form" method="post" data-api-endpoint="/api/v1/visit-requests/" action="">{% csrf_token %}{{ form.errors }}<div
+        <form class="panel workflow-form" method="post" {% if not user.is_authenticated %}data-api-endpoint="/api/v1/visit-requests/"{% endif %} action="">{% csrf_token %}{{ form.errors }}<div
                 class="form-row"><label>Organization<select name="home" required>
                         <option value="">Choose a home</option>{% for home in homes %}<option value="{{ home.pk }}" {% if form.home.value|stringformat:"s" == home.pk|stringformat:"s" %}selected{% endif %}>{{
                             home.name }} · {{ home.location }}</option>{% endfor %}

@@ -1,6 +1,7 @@
 import unittest
+from datetime import date, timedelta
 
-from fairmatch.engine import recommend_allocations, rank_needs
+from fairmatch.engine import convert_quantity, recommend_allocations, rank_needs
 
 
 class FairMatchTests(unittest.TestCase):
@@ -12,7 +13,7 @@ class FairMatchTests(unittest.TestCase):
             "quantity_requested": 50,
             "quantity_fulfilled": 0,
             "urgency": 5,
-            "deadline": "2026-10-30",
+            "deadline": (date.today() + timedelta(days=10)).isoformat(),
             "verification_status": "verified",
             "delivery_feasible": True,
             "storage_capacity_available": True,
@@ -30,7 +31,7 @@ class FairMatchTests(unittest.TestCase):
             "unit": "kg",
             "expiry_date": None,
             "collection_location": "Nairobi",
-            "available_until": "2026-10-30",
+            "available_until": (date.today() + timedelta(days=10)).isoformat(),
             "safety_status": "approved",
             "availability_status": "available",
         }
@@ -76,13 +77,26 @@ class FairMatchTests(unittest.TestCase):
         ranked = rank_needs([need], offer)
         self.assertEqual(ranked, [])
 
-    def test_duplicate_allocation_prevention(self):
+    def test_remaining_offer_quantity_is_not_subtracted_twice(self):
         need = self._need(need_id=1, home_id=10, quantity_requested=50)
-        offer = self._offer(resource_id=100, quantity_available=60)
+        offer = self._offer(resource_id=100, quantity_available=40)
         allocation_history = [{"resource_id": 100, "need_id": 1, "home_id": 10, "quantity_allocated": 20}]
 
         result = recommend_allocations([need], offer, allocation_history)
-        self.assertEqual(result[0]["recommended_quantity"], 30)
+        self.assertEqual(result[0]["recommended_quantity"], 40)
+
+    def test_recommendation_quantity_uses_offer_units(self):
+        need = self._need(
+            quantity_requested=5000,
+            quantity_fulfilled=0,
+            unit="g",
+        )
+        offer = self._offer(quantity_available=2, unit="kg")
+
+        result = recommend_allocations([need], offer)
+
+        self.assertEqual(result[0]["recommended_quantity"], 2)
+        self.assertEqual(convert_quantity(2, "kg", "g"), 2000)
 
     def test_fairness_rule_reduces_score_for_recent_assistance(self):
         first = self._need(need_id=1, home_id=10, quantity_requested=40, urgency=5)

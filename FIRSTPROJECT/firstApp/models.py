@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
 from django.utils import timezone
@@ -63,7 +65,21 @@ class ResourceOffer(models.Model):
         ('verified', 'Verified'),
         ('pending', 'Pending'),
     ]
-    donor = models.ForeignKey(Donor, on_delete=models.CASCADE, related_name='resource_offers')
+    donor = models.ForeignKey(
+        Donor,
+        on_delete=models.CASCADE,
+        related_name='resource_offers',
+        blank=True,
+        null=True,
+    )
+    foodbridge_listing = models.OneToOneField(
+        'FoodBridgeListing',
+        on_delete=models.CASCADE,
+        related_name='resource_offer',
+        blank=True,
+        null=True,
+        editable=False,
+    )
     resource_type = models.CharField(max_length=120)
     quantity_available = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     unit = models.CharField(max_length=20, default='kg')
@@ -129,6 +145,13 @@ class FoodBridgeListing(models.Model):
     expiry_date = models.DateField()
     handling = models.TextField(blank=True, default='')
     food_safety_confirmed = models.BooleanField(default=False)
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='foodbridge_listings',
+        blank=True,
+        null=True,
+    )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_review')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -231,9 +254,44 @@ class HomeRegistration(models.Model):
     website_url = models.URLField(blank=True)
     description = models.TextField()
     verification_acknowledged = models.BooleanField(default=False)
+    applicant = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='home_registrations',
+        blank=True,
+        null=True,
+    )
+    home = models.OneToOneField(
+        ChildrenHome,
+        on_delete=models.SET_NULL,
+        related_name='registration',
+        blank=True,
+        null=True,
+        editable=False,
+    )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_review')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        super().clean()
+        if self.status != 'approved':
+            return
+
+        errors = {}
+        if not self.applicant_id:
+            errors['applicant'] = 'Select the organization account before approving this application.'
+        else:
+            applicant_user = self.applicant
+            profile = HomecareProfile.objects.filter(user_id=self.applicant_id).first()
+            if applicant_user.is_staff:
+                errors['applicant'] = 'Staff accounts cannot be assigned as organization accounts.'
+            elif profile and (profile.role != 'organization' or profile.home_id != self.home_id):
+                errors['applicant'] = (
+                    'This account already has a workspace. Select an account without a conflicting profile.'
+                )
+        if errors:
+            raise ValidationError(errors)
 
     def __str__(self):
         return f'{self.name} ({self.get_status_display()})'
@@ -278,6 +336,13 @@ class ContributionPledge(models.Model):
         help_text="The donor agrees to receive SMS updates about this pledge.",
     )
     pledge_acknowledged = models.BooleanField(default=False)
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='contribution_pledges',
+        blank=True,
+        null=True,
+    )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_review')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -319,3 +384,46 @@ class EventSmsSubscriber(models.Model):
 
     def __str__(self):
         return self.phone_number
+
+
+class HomecareProfile(models.Model):
+    ROLE_CHOICES = [
+        ('organization', 'Organization'),
+        ('donor', 'Donor'),
+        ('supplier', 'Supplier'),
+    ]
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='homecare_profile',
+    )
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    home = models.ForeignKey(
+        ChildrenHome,
+        on_delete=models.CASCADE,
+        related_name='workspace_profiles',
+        blank=True,
+        null=True,
+    )
+    donor = models.ForeignKey(
+        Donor,
+        on_delete=models.SET_NULL,
+        related_name='workspace_profiles',
+        blank=True,
+        null=True,
+    )
+
+    def clean(self):
+        if self.role == 'organization':
+            if not self.home_id:
+                raise ValidationError({'home': 'Organization accounts must be linked to a home.'})
+            if self.home and not self.home.is_verified:
+                raise ValidationError({'home': 'Only verified organizations can have a workspace.'})
+        elif self.home_id:
+            raise ValidationError({'home': 'Only organization accounts can be linked to a home.'})
+
+        if self.role != 'donor' and self.donor_id:
+            raise ValidationError({'donor': 'Only donor accounts can be linked to a donor record.'})
+
+    def __str__(self):
+        return f'{self.user} ({self.get_role_display()})'

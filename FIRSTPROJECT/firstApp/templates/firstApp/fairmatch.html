@@ -6,79 +6,115 @@
         <div>
             <p class="eyebrow">Transparent resource allocation</p>
             <h1>FairMatch</h1>
-            <p>Recommendations based on documented need, suitability and delivery feasibility, with each factor visible.
-            </p>
-        </div><span class="demo-tag"><i class="fa-solid fa-flask" aria-hidden="true"></i> Demonstration data</span>
-    </div>
-    <div class="workflow-ribbon"><span>Available resource</span><i class="fa-solid fa-arrow-right"
-            aria-hidden="true"></i><span>Eligibility checks</span><i class="fa-solid fa-arrow-right"
-            aria-hidden="true"></i><span class="ribbon-active">FairMatch recommendation</span><i
-            class="fa-solid fa-arrow-right" aria-hidden="true"></i><span>Coordinator review</span><i
-            class="fa-solid fa-arrow-right" aria-hidden="true"></i><span>Confirmed receipt</span></div>
-    <div class="fairmatch-layout">
-        <div class="panel match-panel">
-            <div class="panel-heading">
-                <div><span class="small-label">Suggested match · sample only</span>
-                    <h2>Exercise books → Tumaini Learning Centre</h2>
-                </div><span class="status-pill status-review">Review required</span>
-            </div>
-            <div class="match-quantities">
-                <div><span>Available resource</span><b>{{ sample_offer.quantity_available }}
-                        books</b><small>Demonstration offer</small></div>
-                <div><span>Outstanding need</span><b>56 books</b><small>120 requested · 64 fulfilled in sample</small>
-                </div>
-                <div><span>Recommended quantity</span>
-                    <b>{{ recommendation.recommended_quantity }} books</b>
-                    <small>Cannot exceed supply or outstanding need</small>
-                </div>
-            </div>
-            <div class="score-heading">
-                <div><span class="small-label">Explainable priority score</span>
-                    <strong>{{ recommendation.priority_score }}<small>/100</small></strong>
-                </div><span class="status-pill status-open">Eligible in sample</span>
-            </div>
-            <div class="factor-list">
-                <div class="factor-row"><span>Urgency <b>40%</b></span>
-                    <div class="factor-track"><span style="width:{{ recommendation.components.urgency_score }}%"></span>
-                    </div>
-                    <strong>{{ recommendation.components.urgency_score }}</strong>
-                </div>
-                <div class="factor-row"><span>Unmet need <b>30%</b></span>
-                    <div class="factor-track"><span
-                            style="width:{{ recommendation.components.unmet_need_score }}%"></span></div>
-                    <strong>{{ recommendation.components.unmet_need_score }}</strong>
-                </div>
-                <div class="factor-row"><span>Delivery feasibility <b>20%</b></span>
-                    <div class="factor-track"><span
-                            style="width:{{ recommendation.components.delivery_feasibility_score }}%"></span></div>
-                    <strong>{{ recommendation.components.delivery_feasibility_score }}</strong>
-                </div>
-                <div class="factor-row"><span>Allocation equity <b>10%</b></span>
-                    <div class="factor-track"><span
-                            style="width:{{ recommendation.components.allocation_equity_score }}%"></span></div>
-                    <strong>{{ recommendation.components.allocation_equity_score }}</strong>
-                </div>
-            </div>
-            <div class="match-explanation"><i class="fa-regular fa-lightbulb" aria-hidden="true"></i>
-                <p>In this demonstration, the request is marked verified, has remaining quantity, compatible units,
-                    storage capacity and feasible delivery. The recommendation is not an allocation until an authorized
-                    coordinator approves it.</p>
-            </div><button class="button" type="button" disabled aria-disabled="true">Coordinator approval unavailable in
-                demo</button>
+            <p>Live recommendations compare approved offers with verified, published needs, urgency, remaining
+                quantities, storage and delivery feasibility.</p>
         </div>
-        <aside class="panel match-side">
-            <p class="eyebrow">What influences a match</p>
-            <h2>Fair by design.<br>Reviewable by people.</h2>
-            <p>Popularity, social following and children's personal characteristics are not allocation criteria.</p>
-            <ul class="check-list">
-                <li><i class="fa-solid fa-check" aria-hidden="true"></i> Verified, outstanding request</li>
-                <li><i class="fa-solid fa-check" aria-hidden="true"></i> Resource and unit compatibility</li>
-                <li><i class="fa-solid fa-check" aria-hidden="true"></i> Storage and delivery checks</li>
-                <li><i class="fa-solid fa-check" aria-hidden="true"></i> Previous allocation history</li>
-            </ul>
-            <div class="weights-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> These weights are
-                starting assumptions, not scientifically proven optimal values. Overrides should record a reason.</div>
-        </aside>
+        <span class="status-pill status-open">{{ eligible_need_count }} eligible need{{ eligible_need_count|pluralize }}</span>
+    </div>
+    <div class="workflow-ribbon">
+        <span>FoodBridge offer</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+        <span>Safety review</span><i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+        <span class="ribbon-active">Live FairMatch recommendation</span><i class="fa-solid fa-arrow-right"
+            aria-hidden="true"></i><span>Coordinator confirms delivery</span>
+    </div>
+    <div class="notice notice-warning" role="status">
+        <i class="fa-solid fa-shield-heart" aria-hidden="true"></i>
+        <span>FoodBridge offers appear here only after coordinator approval. A recommendation is not an allocation;
+            authorized staff must confirm the delivered quantity.</span>
+    </div>
+    <div class="fairmatch-layout">
+    <div class="fairmatch-live-list">
+        {% for match in matches %}
+        <article class="panel match-panel">
+            <div class="panel-heading">
+                <div>
+                    <span class="small-label">Approved available offer</span>
+                    <h2>{{ match.offer.resource_type }}</h2>
+                </div>
+                <span class="status-pill status-open">{{ match.offer.quantity_available }} {{ match.offer.unit }} available</span>
+            </div>
+            {% if match.recommendations %}
+            {% for recommendation in match.recommendations %}
+            <section class="live-match">
+                <div class="live-match-heading">
+                    <div>
+                        <span class="small-label">{{ recommendation.need.home.location }} County · urgency
+                            {{ recommendation.need.urgency }}/5</span>
+                        <h3>{{ recommendation.need.home.name }}</h3>
+                    </div>
+                    <span class="status-pill status-review">Score {{ recommendation.priority_score }}/100</span>
+                </div>
+                <div class="match-quantities">
+                    <div><span>Outstanding need</span>
+                        <b>{{ recommendation.need.outstanding_quantity }} {{ recommendation.need.unit }}</b>
+                    </div>
+                    <div><span>Recommended allocation</span>
+                        <b>{{ recommendation.recommended_quantity }} {{ match.offer.unit }}</b>
+                    </div>
+                    <div><span>Deadline</span>
+                        <b>{% if recommendation.need.deadline %}{{ recommendation.need.deadline|date:"j M Y" }}{% else %}Not specified{% endif %}</b>
+                    </div>
+                </div>
+                <div class="factor-list">
+                    <div class="factor-row"><span>Urgency <b>40%</b></span>
+                        <div class="factor-track"><span style="width:{{ recommendation.components.urgency_score }}%"></span></div>
+                        <strong>{{ recommendation.components.urgency_score }}</strong>
+                    </div>
+                    <div class="factor-row"><span>Unmet need <b>30%</b></span>
+                        <div class="factor-track"><span style="width:{{ recommendation.components.unmet_need_score }}%"></span></div>
+                        <strong>{{ recommendation.components.unmet_need_score }}</strong>
+                    </div>
+                    <div class="factor-row"><span>Delivery feasibility <b>20%</b></span>
+                        <div class="factor-track"><span style="width:{{ recommendation.components.delivery_feasibility_score }}%"></span></div>
+                        <strong>{{ recommendation.components.delivery_feasibility_score }}</strong>
+                    </div>
+                    <div class="factor-row"><span>Allocation equity <b>10%</b></span>
+                        <div class="factor-track"><span style="width:{{ recommendation.components.allocation_equity_score }}%"></span></div>
+                        <strong>{{ recommendation.components.allocation_equity_score }}</strong>
+                    </div>
+                </div>
+                {% if user.is_staff %}
+                <form method="post" action="{% url 'allocate-fairmatch' match.offer.pk recommendation.need.pk %}">
+                    {% csrf_token %}
+                    <button class="button" type="submit">
+                        Confirm delivery and record allocation
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                    </button>
+                </form>
+                {% else %}
+                <p class="form-footnote">Coordinator confirmation is required before this recommendation changes
+                    inventory or fulfilled quantities.</p>
+                {% endif %}
+            </section>
+            {% endfor %}
+            {% else %}
+            <p class="empty-state">No verified, published need currently matches this offer's item, unit, storage and
+                delivery requirements.</p>
+            {% endif %}
+        </article>
+        {% empty %}
+        <div class="panel directory-empty">
+            <span><i class="fa-solid fa-scale-balanced" aria-hidden="true"></i></span>
+            <h2>No approved offers are currently available.</h2>
+            <p>FoodBridge listings enter FairMatch after their safety and suitability review. Verified, published
+                organization needs are evaluated as offers become available.</p>
+            <a class="button button-small" href="{% url 'foodbridge' %}">List a FoodBridge offer</a>
+        </div>
+        {% endfor %}
+    </div>
+    <aside class="panel match-side">
+        <p class="eyebrow">What influences a match</p>
+        <h2>Fair by design.<br>Reviewable by people.</h2>
+        <p>Popularity, social following and children's personal characteristics are not allocation criteria.</p>
+        <ul class="check-list">
+            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Verified, outstanding request at a verified home</li>
+            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Resource and unit compatibility</li>
+            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Storage and delivery checks</li>
+            <li><i class="fa-solid fa-check" aria-hidden="true"></i> Previous allocation history</li>
+        </ul>
+        <div class="weights-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> These weights are
+            starting assumptions, not scientifically proven optimal values. Overrides should record a reason.</div>
+    </aside>
     </div>
 </section>
 {% endblock %}

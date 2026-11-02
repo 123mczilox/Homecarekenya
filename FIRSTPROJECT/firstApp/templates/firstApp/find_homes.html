@@ -18,13 +18,13 @@
         <label><span>County</span><select name="county">
                 <option value="">All counties</option>
                 {% for value, label in counties %}
-                <option value="{{ value }}">{{ label }}</option>
+                <option value="{{ value }}" {% if selected_county == value %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
             </select></label>
         <label><span>Registration status</span><select name="verification">
-                <option value="">All listings</option>
-                <option value="verified">Verified</option>
-                <option value="listed">Registration listed</option>
+                <option value="" {% if not verification %}selected{% endif %}>All listings</option>
+                <option value="verified" {% if verification == "verified" %}selected{% endif %}>Verified</option>
+                <option value="listed" {% if verification == "listed" %}selected{% endif %}>Registration listed</option>
             </select></label>
         <button class="button" type="submit"><i class="fa-solid fa-sliders" aria-hidden="true"></i> Apply
             filters</button>

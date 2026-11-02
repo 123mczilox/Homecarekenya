@@ -10,7 +10,8 @@
                 before it is accepted or fulfilled.</p>
         </div>
     </div>
-    <form class="panel workflow-form donation-form" method="post" data-api-endpoint="/api/v1/contributions/">
+    <form class="panel workflow-form donation-form" method="post"
+        {% if not user.is_authenticated %}data-api-endpoint="/api/v1/contributions/"{% endif %}>
         {% csrf_token %}
         {{ form.non_field_errors }}
         <fieldset>

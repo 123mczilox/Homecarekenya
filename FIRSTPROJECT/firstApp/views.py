@@ -1,17 +1,19 @@
 import logging
 import os
+from functools import wraps
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import transaction
 from django.db.models import F, Q
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from communications.services import send_sms
-from fairmatch.engine import recommend_allocations
-
 from .backend_api import BackendAPIError, get_public_home, get_public_homes
 from .forms import (
     AllocationForm,
@@ -33,14 +35,26 @@ from .models import (
     BookingRequest,
     ChildrenHome,
     CommunityEvent,
+    ContributionPledge,
     Donor,
     EventSmsSubscriber,
     FoodBridgeListing,
     HomeNeed,
+    HomeRegistration,
+    HomecareProfile,
     Hobby,
     ResourceOffer,
     Student,
 )
+from .matching import (
+    FairMatchError,
+    allocate_fairmatch_recommendation,
+    eligible_needs,
+    fairmatch_board,
+    offer_recommendations,
+    sync_foodbridge_resource_offer,
+)
+from .registration_workflow import approve_home_registration as approve_registration
 
 logger = logging.getLogger(__name__)
 EVENT_TIME_ZONE = ZoneInfo("Africa/Nairobi")
@@ -56,10 +70,18 @@ def home(request):
             featured_homes = get_public_homes({"verification": "verified"})[:3]
         except BackendAPIError:
             return backend_unavailable(request)
-        return render(request, "main.html", {"featured_homes": featured_homes})
+        return render(
+            request,
+            "main.html",
+            {"featured_homes": featured_homes, "counties": ChildrenHome.COUNTY_CHOICES},
+        )
 
     featured_homes = ChildrenHome.objects.filter(is_verified=True).order_by("-created_at")[:3]
-    return render(request, "main.html", {"featured_homes": featured_homes})
+    return render(
+        request,
+        "main.html",
+        {"featured_homes": featured_homes, "counties": ChildrenHome.COUNTY_CHOICES},
+    )
 
 
 def find_homes(request):
@@ -247,7 +269,12 @@ def donations(request):
     form_data = request.POST if request.method == "POST" else None
     form = ContributionPledgeForm(form_data)
     if request.method == "POST" and form.is_valid():
-        pledge = form.save()
+        pledge = form.save(commit=False)
+        if request.user.is_authenticated and HomecareProfile.objects.filter(
+            user=request.user, role="donor"
+        ).exists():
+            pledge.submitted_by = request.user
+        pledge.save()
         sms_failures = []
         coordinator_phone = os.environ.get("COORDINATOR_PHONE", "").strip()
         if coordinator_phone:
@@ -299,19 +326,182 @@ def donations(request):
 
 
 def homed(request):
-    return render(request, "firstApp/homed.html")
+    return organization_dashboard(request)
 
 
+def role_required(role):
+    def decorator(view_func):
+        @login_required
+        @wraps(view_func)
+        def wrapped(request, *args, **kwargs):
+            if role == "staff":
+                allowed = request.user.is_staff
+            else:
+                profiles = HomecareProfile.objects.filter(user=request.user, role=role)
+                if role == "organization":
+                    profiles = profiles.filter(home__is_verified=True)
+                allowed = profiles.exists()
+            if not allowed:
+                raise PermissionDenied
+            return view_func(request, *args, **kwargs)
+
+        return wrapped
+
+    return decorator
+
+
+@login_required
+def dashboard(request):
+    if request.user.is_staff:
+        return redirect("admin-dashboard")
+    profile = HomecareProfile.objects.filter(user=request.user).first()
+    if profile is None:
+        raise PermissionDenied
+    dashboard_names = {
+        "organization": "homed",
+        "donor": "donor-dashboard",
+        "supplier": "supplier-dashboard",
+    }
+    destination = dashboard_names.get(profile.role)
+    if destination is None:
+        raise PermissionDenied
+    return redirect(destination)
+
+
+@role_required("staff")
 def admin_dashboard(request):
-    return render(request, "firstApp/admin.html")
+    review_models = (
+        "homeregistration",
+        "homeneed",
+        "contributionpledge",
+        "foodbridgelisting",
+        "bookingrequest",
+        "allocation",
+    )
+    return render(
+        request,
+        "firstApp/admin.html",
+        {
+            "review_permissions": {
+                model: request.user.has_perm(f"firstApp.view_{model}")
+                or request.user.has_perm(f"firstApp.change_{model}")
+                for model in review_models
+            },
+            "can_change_registrations": request.user.has_perm(
+                "firstApp.change_homeregistration"
+            ),
+            "pending_registrations": HomeRegistration.objects.filter(status="pending_review").count(),
+            "registration_queue": HomeRegistration.objects.filter(
+                status="pending_review"
+            ).select_related("applicant").order_by("created_at")[:5],
+            "pending_needs": HomeNeed.objects.filter(
+                Q(verification_status="pending")
+                | Q(verification_status__in=["verified", "approved"], is_published=False)
+            ).count(),
+            "pending_pledges": ContributionPledge.objects.filter(status="pending_review").count(),
+            "pending_food_offers": FoodBridgeListing.objects.filter(status="pending_review").count(),
+            "pending_visits": BookingRequest.objects.filter(status="pending_review").count(),
+            "pending_allocations": Allocation.objects.filter(status="pending").count(),
+        },
+    )
+
+
+@role_required("staff")
+def approve_home_registration_view(request, registration_id):
+    if not request.user.has_perm("firstApp.change_homeregistration"):
+        raise PermissionDenied
+
+    try:
+        home = approve_registration(registration_id)
+    except HomeRegistration.DoesNotExist:
+        raise Http404
+    except ValidationError as exc:
+        messages.error(request, "Application was not approved: " + " ".join(exc.messages))
+    else:
+        messages.success(
+            request,
+            f"{home.name} is verified and its organization dashboard is ready.",
+        )
+    return redirect("admin-dashboard")
 
 
 def admin(request):
     return admin_dashboard(request)
 
 
+@role_required("organization")
+def organization_dashboard(request):
+    profile = get_object_or_404(
+        HomecareProfile.objects.select_related("home"),
+        user=request.user,
+        role="organization",
+        home__is_verified=True,
+    )
+    home = profile.home
+    today = timezone.localdate()
+    return render(
+        request,
+        "firstApp/homed.html",
+        {
+            "home": home,
+            "needs": home.needs.order_by("-created_at")[:6],
+            "outstanding_needs": home.needs.filter(
+                is_published=True,
+                verification_status__in=["verified", "approved"],
+                quantity_fulfilled__lt=F("quantity_requested"),
+            ).count(),
+            "pending_needs": home.needs.filter(verification_status="pending").count(),
+            "upcoming_visits": home.booking_requests.filter(
+                date__gte=today,
+                status__in=["pending_review", "approved"],
+            ).count(),
+            "pledges": ContributionPledge.objects.filter(need__home=home).count(),
+        },
+    )
+
+
+@role_required("donor")
+def donor_dashboard(request):
+    pledges = ContributionPledge.objects.filter(submitted_by=request.user).order_by("-created_at")
+    return render(
+        request,
+        "firstApp/donor_dashboard.html",
+        {
+            "pledges": pledges[:8],
+            "pledge_count": pledges.count(),
+            "pending_pledges": pledges.filter(status="pending_review").count(),
+            "accepted_pledges": pledges.filter(status="accepted").count(),
+        },
+    )
+
+
+@role_required("supplier")
+def supplier_dashboard(request):
+    offers = FoodBridgeListing.objects.filter(submitted_by=request.user).order_by("-created_at")
+    return render(
+        request,
+        "firstApp/supplier_dashboard.html",
+        {
+            "offers": offers[:8],
+            "offer_count": offers.count(),
+            "pending_offers": offers.filter(status="pending_review").count(),
+            "approved_offers": offers.filter(status="approved").count(),
+        },
+    )
+
+
 def needs_management(request):
+    if request.user.is_authenticated and not request.user.is_staff:
+        if not HomecareProfile.objects.filter(user=request.user, role="organization").exists():
+            raise PermissionDenied
     homes = ChildrenHome.objects.filter(is_verified=True).order_by("name")
+    profile = (
+        HomecareProfile.objects.filter(user=request.user, role="organization").first()
+        if request.user.is_authenticated
+        else None
+    )
+    if profile and profile.home_id:
+        homes = homes.filter(pk=profile.home_id)
     form_data = request.POST if request.method == "POST" else None
     form = HomeNeedSubmissionForm(form_data, homes=homes)
     if request.method == "POST" and form.is_valid():
@@ -337,36 +527,13 @@ def needs_management(request):
 
 
 def fairmatch(request):
-    sample_need = {
-        "need_id": "demo-learning-supplies",
-        "home_id": "demo-home-01",
-        "resource_type": "exercise books",
-        "quantity_requested": 120,
-        "quantity_fulfilled": 64,
-        "unit": "books",
-        "urgency": 4,
-        "deadline": "2026-11-15",
-        "verification_status": "verified",
-        "storage_capacity_available": True,
-        "delivery_feasible": True,
-    }
-    sample_offer = {
-        "resource_id": "demo-offer-01",
-        "resource_type": "exercise books",
-        "quantity_available": 40,
-        "unit": "books",
-        "safety_status": "approved",
-        "availability_status": "available",
-    }
-    recommendations = recommend_allocations([sample_need], sample_offer)
+    matches, eligible_need_count = fairmatch_board()
     return render(
         request,
         "firstApp/fairmatch.html",
         {
-            "recommendations": recommendations,
-            "recommendation": recommendations[0] if recommendations else None,
-            "sample_need": sample_need,
-            "sample_offer": sample_offer,
+            "matches": matches,
+            "eligible_need_count": eligible_need_count,
         },
     )
 
@@ -376,7 +543,14 @@ def foodbridge(request):
     form = FoodBridgeListingForm(form_data)
     if request.method == "POST":
         if form.is_valid():
-            listing = form.save()
+            with transaction.atomic():
+                listing = form.save(commit=False)
+                if request.user.is_authenticated and HomecareProfile.objects.filter(
+                    user=request.user, role="supplier"
+                ).exists():
+                    listing.submitted_by = request.user
+                listing.save()
+                sync_foodbridge_resource_offer(listing)
             coordinator_phone = os.environ.get("COORDINATOR_PHONE")
             if coordinator_phone:
                 send_sms(
@@ -406,7 +580,10 @@ def home_registration(request):
     form_data = request.POST if request.method == "POST" else None
     form = HomeRegistrationForm(form_data)
     if request.method == "POST" and form.is_valid():
-        form.save()
+        registration = form.save(commit=False)
+        if request.user.is_authenticated:
+            registration.applicant = request.user
+        registration.save()
         messages.success(
             request,
             "Your organization details are saved and awaiting review. This submission does not verify the organization.",
@@ -573,55 +750,32 @@ def deleteAllocation(request, pk):
 
 def match_resource_offer(request, offer_id):
     offer = get_object_or_404(ResourceOffer, id=offer_id)
-    needs = HomeNeed.objects.filter(
-        verification_status__in=["verified", "approved"],
-        is_published=True,
-        resource_type__iexact=offer.resource_type,
-    ).select_related("home")
-
-    need_dicts = [
+    recommendations = offer_recommendations(offer, eligible_needs())
+    return JsonResponse(
         {
-            "need_id": need.id,
-            "home_id": need.home_id,
-            "resource_type": need.resource_type,
-            "quantity_requested": float(need.quantity_requested),
-            "quantity_fulfilled": float(need.quantity_fulfilled),
-            "urgency": need.urgency,
-            "deadline": need.deadline.isoformat() if need.deadline else None,
-            "verification_status": need.verification_status,
-            "delivery_feasible": need.delivery_feasible,
-            "storage_capacity_available": need.storage_capacity_available,
-            "unit": need.unit,
+            "offer_id": offer.id,
+            "recommendations": [
+                {key: value for key, value in item.items() if key != "need"}
+                for item in recommendations
+            ],
         }
-        for need in needs
-    ]
+    )
 
-    offer_dict = {
-        "resource_id": offer.id,
-        "donor_id": offer.donor_id,
-        "resource_type": offer.resource_type,
-        "quantity_available": float(offer.quantity_available),
-        "unit": offer.unit,
-        "expiry_date": offer.expiry_date.isoformat() if offer.expiry_date else None,
-        "collection_location": offer.collection_location,
-        "available_until": offer.available_until.isoformat() if offer.available_until else None,
-        "safety_status": offer.safety_status,
-        "availability_status": offer.availability_status,
-    }
 
-    history = []
-    for allocation in Allocation.objects.filter(resource_offer_id=offer.id).select_related("need__home"):
-        history.append(
-            {
-                "resource_id": offer.id,
-                "need_id": allocation.need_id,
-                "home_id": allocation.need.home_id,
-                "quantity_allocated": float(allocation.quantity_allocated),
-            }
+def allocate_fairmatch(request, offer_id, need_id):
+    try:
+        allocation = allocate_fairmatch_recommendation(offer_id, need_id)
+    except FairMatchError as error:
+        messages.warning(request, str(error))
+    else:
+        messages.success(
+            request,
+            (
+                f"Recorded delivery of {allocation.quantity_allocated} "
+                f"{allocation.resource_offer.unit} for {allocation.need.home.name}."
+            ),
         )
-
-    results = recommend_allocations(need_dicts, offer_dict, history)
-    return JsonResponse({"offer_id": offer.id, "recommendations": results})
+    return redirect("fairmatch")
 
 
 # ---------------- Student CRUD ----------------

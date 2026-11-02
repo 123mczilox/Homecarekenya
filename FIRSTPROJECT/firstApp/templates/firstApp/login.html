@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Sign in | HomeCare Kenya{% endblock %}
+{% block content %}
+<section class="prototype-page section-shell narrow-page">
+    <div class="page-intro-row">
+        <div>
+            <p class="eyebrow">A connected care network</p>
+            <h1>Welcome back.</h1>
+            <p>Sign in to your HomeCare Kenya workspace.</p>
+        </div>
+    </div>
+    <form class="panel workflow-form login-form" method="post">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="notice notice-warning" role="alert">{{ form.non_field_errors }}</div>
+        {% endif %}
+        <label for="{{ form.username.id_for_label }}">Username
+            {{ form.username }}
+            {{ form.username.errors }}
+        </label>
+        <label for="{{ form.password.id_for_label }}">Password
+            {{ form.password }}
+            {{ form.password.errors }}
+        </label>
+        <input type="hidden" name="next" value="{{ next }}">
+        <button class="button" type="submit">Sign in <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+        <p class="form-footnote">Workspaces are provisioned by HomeCare Kenya staff. If you need access, contact your organization coordinator.</p>
+    </form>
+</section>
+{% endblock %}

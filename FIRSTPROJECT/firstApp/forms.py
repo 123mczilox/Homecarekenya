@@ -82,6 +82,8 @@ class BookingRequestForm(ModelForm):
 
 
 class FoodBridgeListingForm(ModelForm):
+    food_name = forms.CharField(max_length=120)
+    unit = forms.CharField(max_length=20)
     contact_name = forms.CharField(max_length=150)
     contact_email = forms.EmailField()
     food_safety_confirmed = forms.BooleanField(required=True)

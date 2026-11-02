@@ -16,11 +16,18 @@
                 <a href="{% url 'events' %}">Community</a>
             </div>
             <div class="nav-actions">
-                <a class="nav-login" href="{% url 'homed' %}">Log in</a>
+                {% if user.is_authenticated %}
+                <a class="nav-login" href="{% url 'dashboard' %}">My workspace</a>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button class="nav-login nav-logout" type="submit">Sign out</button>
+                </form>
+                {% else %}
+                <a class="nav-login" href="{% url 'login' %}">Log in</a>
+                {% endif %}
                 <a class="button button-small" href="{% url 'Donations' %}"><i class="fa-solid fa-heart" aria-hidden="true"></i> Donate</a>
             </div>
         </div>
     </nav>
 </header>
-
 

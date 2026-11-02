@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Donor workspace | HomeCare Kenya{% endblock %}
+{% block content %}
+<section class="dashboard-page">
+    <aside class="dashboard-sidebar">
+        <a class="dashboard-brand" href="{% url 'donor-dashboard' %}">
+            <span class="brand-mark"><i class="fa-solid fa-heart" aria-hidden="true"></i></span>
+            <b>Donor workspace</b>
+        </a>
+        <span class="sidebar-label">YOUR ACTIVITY</span>
+        <a class="sidebar-link sidebar-active" href="{% url 'donor-dashboard' %}">
+            <i class="fa-solid fa-chart-line" aria-hidden="true"></i> Overview
+        </a>
+        <a class="sidebar-link" href="{% url 'Donations' %}">
+            <i class="fa-solid fa-box-open" aria-hidden="true"></i> Make a pledge
+        </a>
+        <a class="sidebar-link" href="{% url 'find_homes' %}">
+            <i class="fa-regular fa-building" aria-hidden="true"></i> Explore homes
+        </a>
+        <div class="sidebar-bottom">
+            <a class="sidebar-link" href="{% url 'home' %}">
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Public website
+            </a>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button class="sidebar-link sidebar-logout" type="submit">
+                    <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i> Sign out
+                </button>
+            </form>
+        </div>
+    </aside>
+    <div class="dashboard-main">
+        <div class="dashboard-topline">
+            <div>
+                <p class="eyebrow">Donor workspace</p>
+                <h1>Your contribution activity</h1>
+                <p>Only pledges submitted while signed in to this account appear here.</p>
+            </div>
+            <a class="button button-small" href="{% url 'Donations' %}">
+                Make a contribution <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            </a>
+        </div>
+        {% if HOMECARE_API_BASE_URL %}
+        <div class="notice notice-warning" role="status">
+            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+            <span>A separate API is configured. Signed-in pledges are saved in Django for account ownership; this workspace does not read that API's records.</span>
+        </div>
+        {% endif %}
+        <div class="dashboard-metrics">
+            <article><span>Your pledges</span><b>{{ pledge_count }}</b><small>Submitted from this account</small></article>
+            <article><span>Awaiting review</span><b>{{ pending_pledges }}</b><small>Coordinator follow-up pending</small></article>
+            <article><span>Accepted</span><b>{{ accepted_pledges }}</b><small>Acceptance is not fulfillment</small></article>
+            <article><span>Payment status</span><b>—</b><small>No payment is processed by a pledge</small></article>
+        </div>
+        <section class="panel">
+            <div class="panel-heading">
+                <div><span class="small-label">Your activity</span><h2>Contribution pledges</h2></div>
+            </div>
+            <div class="dashboard-record-list">
+                {% for pledge in pledges %}
+                <div class="dashboard-record">
+                    <span class="record-icon"><i class="fa-solid fa-heart" aria-hidden="true"></i></span>
+                    <span><b>{{ pledge.description }}</b><small>{{ pledge.quantity }} · {{ pledge.get_resource_type_display }} · {{ pledge.created_at|date:"j M Y" }}</small></span>
+                    <span class="status-pill {% if pledge.status == 'fulfilled' %}status-open{% else %}status-review{% endif %}">{{ pledge.get_status_display }}</span>
+                </div>
+                {% empty %}
+                <p class="empty-state">No pledges have been submitted from this account yet.</p>
+                {% endfor %}
+            </div>
+            <p class="form-footnote">Pledges are not payments or confirmed deliveries. A coordinator updates each status after review.</p>
+        </section>
+    </div>
+</section>
+{% endblock %}

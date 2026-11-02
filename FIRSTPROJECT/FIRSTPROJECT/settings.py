@@ -18,8 +18,26 @@ PROJECT_ROOT = BASE_DIR.parent
 load_dotenv(PROJECT_ROOT / ".env")
 load_dotenv(BASE_DIR / ".env")
 
-DEBUG = os.environ.get("DEBUG", "true").strip().lower() in {"1", "true", "yes"}
-SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-homecarekenya-local-dev")
+def environment_flag(name, *, default=None):
+    value = os.environ.get(name)
+    if value is None:
+        if default is None:
+            raise ImproperlyConfigured(f"{name} must be set in the environment.")
+        return default
+
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    raise ImproperlyConfigured(f"{name} must be a boolean value.")
+
+
+DEBUG = environment_flag("DEBUG")
+SECRET_KEY = os.environ.get("SECRET_KEY", "").strip()
+if not SECRET_KEY:
+    raise ImproperlyConfigured("SECRET_KEY must be set to a non-empty value in the environment.")
+
 ALLOWED_HOSTS = [
     host.strip()
     for host in os.environ.get(
@@ -98,7 +116,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "FIRSTPROJECT.wsgi.application"
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "")
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 USE_SQLITE_FALLBACK = os.environ.get("USE_SQLITE_FALLBACK", "false").strip().lower() in {"1", "true", "yes"}
 
 if DATABASE_URL:
@@ -143,6 +161,9 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "dashboard"
+LOGOUT_REDIRECT_URL = "home"
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
@@ -157,12 +178,19 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 X_FRAME_OPTIONS = "DENY"
 SECURE_SSL_REDIRECT = not DEBUG
-SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "0")) if not DEBUG else 0
-SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get("SECURE_HSTS_INCLUDE_SUBDOMAINS", "false").lower() == "true"
-SECURE_HSTS_PRELOAD = os.environ.get("SECURE_HSTS_PRELOAD", "false").lower() == "true"
+try:
+    SECURE_HSTS_SECONDS = int(
+        os.environ.get("SECURE_HSTS_SECONDS", "0" if DEBUG else "31536000")
+    )
+except ValueError as exc:
+    raise ImproperlyConfigured("SECURE_HSTS_SECONDS must be an integer.") from exc
+SECURE_HSTS_INCLUDE_SUBDOMAINS = environment_flag(
+    "SECURE_HSTS_INCLUDE_SUBDOMAINS", default=False
+)
+SECURE_HSTS_PRELOAD = environment_flag("SECURE_HSTS_PRELOAD", default=False)
 SECURE_PROXY_SSL_HEADER = (
     ("HTTP_X_FORWARDED_PROTO", "https")
-    if os.environ.get("TRUST_X_FORWARDED_PROTO", "false").lower() == "true"
+    if environment_flag("TRUST_X_FORWARDED_PROTO", default=False)
     else None
 )
 

@@ -22,6 +22,9 @@
             const csrfInput = form.querySelector('input[name="csrfmiddlewaretoken"]');
             const payload = Object.fromEntries(new FormData(form).entries());
             delete payload.csrfmiddlewaretoken;
+            form.querySelectorAll('[aria-invalid="true"]').forEach((input) => {
+                input.removeAttribute("aria-invalid");
+            });
             form.querySelectorAll('input[type="checkbox"][name]').forEach((input) => {
                 payload[input.name] = input.checked;
             });
@@ -50,7 +53,6 @@
                     credentials: "include",
                     body: JSON.stringify(payload),
                 });
-                const result = await response.json().catch(() => ({}));
 
                 if (!response.ok) {
                     const isLocalFallback = [404, 405].includes(response.status);
@@ -59,14 +61,55 @@
                         return;
                     }
 
-                    const validationText = result.errors
-                        ? Object.values(result.errors).flat().join(" ")
-                        : result.detail || result.message;
-                    throw new Error(validationText || `Request failed (${response.status}).`);
+                    const contentType = response.headers.get("content-type") || "";
+                    let result = {};
+                    if (contentType.includes("application/json")) {
+                        try {
+                            result = await response.json();
+                        } catch {
+                            result = {};
+                        }
+                    }
+                    if (!result || typeof result !== "object" || Array.isArray(result)) result = {};
+                    const validationText = [];
+                    if (typeof result.detail === "string") validationText.push(result.detail);
+                    if (typeof result.message === "string") validationText.push(result.message);
+                    if (result.errors && typeof result.errors === "object" && !Array.isArray(result.errors)) {
+                        Object.entries(result.errors).forEach(([field, messages]) => {
+                            const fieldMessages = Array.isArray(messages) ? messages : [messages];
+                            const fieldInput = Array.from(form.elements).find((input) => input.name === field);
+                            if (fieldInput) fieldInput.setAttribute("aria-invalid", "true");
+                            validationText.push(`${field}: ${fieldMessages.join(" ")}`);
+                        });
+                    }
+                    throw new Error(validationText.join(" ") || `Request failed (${response.status}).`);
                 }
 
+                const contentType = response.headers.get("content-type") || "";
+                let result = {};
+                if (response.status !== 204) {
+                    if (!contentType.includes("application/json")) {
+                        throw new Error(
+                            "The service accepted the request but returned an unreadable response. Check its status before trying again."
+                        );
+                    }
+                    try {
+                        result = await response.json();
+                    } catch {
+                        throw new Error(
+                            "The service accepted the request but returned invalid JSON. Check its status before trying again."
+                        );
+                    }
+                    if (!result || typeof result !== "object" || Array.isArray(result)) {
+                        throw new Error(
+                            "The service accepted the request but returned an invalid response. Check its status before trying again."
+                        );
+                    }
+                }
                 if (feedback) {
-                    feedback.textContent = result.message || "Your request was received.";
+                    feedback.textContent = typeof result.message === "string"
+                        ? result.message
+                        : "Your request was received.";
                     feedback.dataset.state = "success";
                 }
                 form.reset();

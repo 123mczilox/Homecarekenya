@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Supplier workspace | HomeCare Kenya{% endblock %}
+{% block content %}
+<section class="dashboard-page">
+    <aside class="dashboard-sidebar">
+        <a class="dashboard-brand" href="{% url 'supplier-dashboard' %}">
+            <span class="brand-mark"><i class="fa-solid fa-seedling" aria-hidden="true"></i></span>
+            <b>Supplier workspace</b>
+        </a>
+        <span class="sidebar-label">YOUR ACTIVITY</span>
+        <a class="sidebar-link sidebar-active" href="{% url 'supplier-dashboard' %}">
+            <i class="fa-solid fa-chart-line" aria-hidden="true"></i> Overview
+        </a>
+        <a class="sidebar-link" href="{% url 'foodbridge' %}">
+            <i class="fa-solid fa-carrot" aria-hidden="true"></i> List food
+        </a>
+        <a class="sidebar-link" href="{% url 'needs-management' %}">
+            <i class="fa-solid fa-list-check" aria-hidden="true"></i> View current needs
+        </a>
+        <a class="sidebar-link" href="{% url 'fairmatch' %}">
+            <i class="fa-solid fa-scale-balanced" aria-hidden="true"></i> FairMatch
+        </a>
+        <div class="sidebar-bottom">
+            <a class="sidebar-link" href="{% url 'home' %}">
+                <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Public website
+            </a>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button class="sidebar-link sidebar-logout" type="submit">
+                    <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i> Sign out
+                </button>
+            </form>
+        </div>
+    </aside>
+    <div class="dashboard-main">
+        <div class="dashboard-topline">
+            <div>
+                <p class="eyebrow">Supplier workspace</p>
+                <h1>Your FoodBridge offers</h1>
+                <p>Track offers submitted while signed in to this account.</p>
+            </div>
+            <a class="button button-small" href="{% url 'foodbridge' %}">
+                List suitable food <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            </a>
+        </div>
+        {% if HOMECARE_API_BASE_URL %}
+        <div class="notice notice-warning" role="status">
+            <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+            <span>A separate API is configured. Signed-in offers are saved in Django for account ownership; this workspace does not read that API's records.</span>
+        </div>
+        {% endif %}
+        <div class="dashboard-metrics">
+            <article><span>Your offers</span><b>{{ offer_count }}</b><small>Submitted from this account</small></article>
+            <article><span>Awaiting review</span><b>{{ pending_offers }}</b><small>Food safety review required</small></article>
+            <article><span>Approved offers</span><b>{{ approved_offers }}</b><small>Approval is not a confirmed delivery</small></article>
+            <article><span>Food safety</span><b>Review</b><small>Coordinator approval required</small></article>
+        </div>
+        <section class="panel">
+            <div class="panel-heading">
+                <div><span class="small-label">Your activity</span><h2>FoodBridge listings</h2></div>
+            </div>
+            <div class="dashboard-record-list">
+                {% for offer in offers %}
+                <div class="dashboard-record">
+                    <span class="record-icon"><i class="fa-solid fa-carrot" aria-hidden="true"></i></span>
+                    <span><b>{{ offer.food_name }}</b><small>{{ offer.quantity }} {{ offer.unit }} listed · Use by {{ offer.expiry_date|date:"j M Y" }}{% if offer.status == "approved" and offer.resource_offer %} · {{ offer.resource_offer.quantity_available }} {{ offer.resource_offer.unit }} available for matching{% endif %}</small></span>
+                    <span class="status-pill {% if offer.status == 'approved' %}status-open{% else %}status-review{% endif %}">{{ offer.get_status_display }}</span>
+                </div>
+                {% empty %}
+                <p class="empty-state">No listings have been submitted from this account yet.</p>
+                {% endfor %}
+            </div>
+            <p class="form-footnote">Approved offers are evaluated against current FairMatch needs. Recommendations require coordinator confirmation and a recorded receipt.</p>
+        </section>
+    </div>
+</section>
+{% endblock %}

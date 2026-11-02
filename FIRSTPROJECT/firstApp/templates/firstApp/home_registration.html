@@ -10,7 +10,8 @@
                 steps.</p>
         </div>
     </div>
-    <form class="panel workflow-form" method="post" data-api-endpoint="/api/v1/home-registrations/">
+    <form class="panel workflow-form" method="post"
+        {% if not user.is_authenticated %}data-api-endpoint="/api/v1/home-registrations/"{% endif %}>
         {% csrf_token %}
         {{ form.non_field_errors }}
         <label>Organization name
